@@ -41,6 +41,15 @@ inline NSRect tabRect (int i) { return NSMakeRect (20.0 + i * 122.0, kTabY, 116.
 const NSRect kLengthRect = { { 560.0, 114.0 }, { 180.0, 32.0 } };
 inline NSRect modeRect (int i) { return NSMakeRect (770.0 + i * 98.0, kTabY, 90.0, kTabH); }
 
+// Every page shows the pads in the user's order: Kick, Snare, Hi-Hat, Hi Tom,
+// Mid Tom, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
+const int kPadOrder[kNumPads] = { 0, 1, 7, 4, 3, 2, 8, 9, 6, 5 };
+inline int padPos (int pad)
+{
+    for (int i = 0; i < kNumPads; ++i) if (kPadOrder[i] == pad) return i;
+    return pad;
+}
+
 // Steps page
 const CGFloat kRowY0 = 186.0, kRowPitch = 40.0, kCellH = 30.0;
 const CGFloat kGridX0 = 356.0, kStepPitch = 24.0, kCellW = 21.0;
@@ -52,11 +61,14 @@ inline NSRect rowMuteRect (int row) { return NSMakeRect (303.0, kRowY0 + row * k
 inline NSRect rowSoloRect (int row) { return NSMakeRect (328.0, kRowY0 + row * kRowPitch + 8.0, 22.0, 24.0); }
 // rows top to bottom (the user's order): Accent, Kick, Snare, Hi-Hat, Hi Tom,
 // Mid Tom, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
-const int kRowOrder[kNumTracks] = { kAccentTrack, 0, 1, 7, 4, 3, 2, 8, 9, 6, 5 };
-inline int rowTrack (int row) { return kRowOrder[row]; }
+inline int rowTrack (int row) { return row == 0 ? kAccentTrack : kPadOrder[row - 1]; }
 
 // Pads page
-inline NSRect padRect (int pad) { return NSMakeRect (40.0 + (pad % 5) * 224.0, (pad < 5 ? 194.0 : 428.0), 196.0, 146.0); }
+inline NSRect padRect (int pad)
+{
+    const int i = padPos (pad);
+    return NSMakeRect (40.0 + (i % 5) * 224.0, (i < 5 ? 194.0 : 428.0), 196.0, 146.0);
+}
 inline NSRect padFlamRect (int pad, int i)
 {
     const NSRect p = padRect (pad);
@@ -64,7 +76,7 @@ inline NSRect padFlamRect (int pad, int i)
 }
 
 // Mixer page
-inline CGFloat mixX (int ch) { return 24.0 + ch * 114.0; }
+inline CGFloat mixX (int ch) { return 24.0 + padPos (ch) * 114.0; }
 const CGFloat kMixTuneY = 238.0, kMixDecayY = 326.0, kMixPanY = 414.0, kMixKnobR = 20.0;
 const CGFloat kFaderTop = 458.0, kFaderBot = 582.0;
 inline NSRect faderRect (int ch) { return NSMakeRect (mixX (ch) + 36.0, kFaderTop - 10.0, 32.0, kFaderBot - kFaderTop + 20.0); }
@@ -953,7 +965,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         const CGFloat x = mixX (ch), cx = x + 52.0;
         const tbdm::Channel& c = e.song().channels[ch];
         // strip divider
-        if (ch > 0)
+        if (padPos (ch) > 0)
         {
             [rgb (140, 143, 147) set];
             NSRectFill (NSMakeRect (x - 6.0, 162.0, 1.0, 462.0));

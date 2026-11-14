@@ -700,7 +700,7 @@ static void loadKits (AppCore* c)
     [self drag: NSMakePoint (24.0 + 52.0, 582.0 - 124.0 * before) to: NSMakePoint (24.0 + 52.0, 582.0 - 124.0 * before + 40.0)];
     [self check: e.song().channels[0].level < before - 0.2f what: "fader drag lowers the kick level"];
     [self drag: NSMakePoint (24.0 + 114.0 * 2 + 52.0, 238.0) to: NSMakePoint (24.0 + 114.0 * 2 + 52.0, 238.0 - 50.0)];
-    [self check: e.song().channels[2].tune > 2.0f what: "tune knob drag"];
+    [self check: e.song().channels[7].tune > 2.0f what: "tune knob drag (3rd strip: hi-hat)"];
     [self shot: "mixer"];
 
     // song
