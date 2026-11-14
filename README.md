@@ -102,6 +102,12 @@ level going into the sidecar.
   GM drum notes). Accents are velocity 127, other hits 100, and the tempo is included.
   Flams export as one note.
 
+## Window size
+
+Drag the window's corner to scale the whole panel, sidecar included, from 50 % to 200 % of full
+size. It keeps its proportions and redraws sharp at the new size. The size and position are
+remembered. On first launch it opens as large as fits the screen.
+
 ## Sessions
 
 Everything (patterns, names, song, mixer, tempo, page) is saved automatically to

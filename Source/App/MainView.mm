@@ -831,6 +831,20 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     gGroup = sigDef (P.sig).group;
 }
 
+// The window scales from its corner: the frame follows the window, the bounds
+// stay at the panel's own size, so drawing and mouse points scale together.
+- (void) setFrameSize: (NSSize) sz
+{
+    [super setFrameSize: sz];
+    [self setBoundsSize: NSMakeSize (kViewWidth, kViewHeight)];
+}
+
+- (void) viewDidEndLiveResize
+{
+    [super viewDidEndLiveResize];
+    [self setNeedsDisplay: YES];     // the backdrop is remade sharp at the new size
+}
+
 - (BOOL) isFlipped { return YES; }
 - (BOOL) isOpaque { return YES; }
 - (BOOL) acceptsFirstResponder { return YES; }
@@ -1223,9 +1237,22 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (NSImage*) backdropImage
 {
+    // Drawn at the window's current size (so it stays sharp at any scale), then
+    // scaled back into the panel's own coordinates. Remade when the size settles.
+    const NSSize fsz = [self frame].size;
+    if (backdrop && ! [self inLiveResize] && (std::fabs ([backdrop size].width - fsz.width) > 0.5 || std::fabs ([backdrop size].height - fsz.height) > 0.5))
+    {
+        [backdrop release];
+        backdrop = nil;
+    }
     if (backdrop) return backdrop;
-    backdrop = [[NSImage alloc] initWithSize: NSMakeSize (kViewWidth, kViewHeight)];
+    backdrop = [[NSImage alloc] initWithSize: fsz];
     [backdrop lockFocusFlipped: YES];
+    {
+        NSAffineTransform* sc = [NSAffineTransform transform];
+        [sc scaleXBy: fsz.width / kViewWidth yBy: fsz.height / kViewHeight];
+        [sc concat];
+    }
     drawMahoganyFrame (0.0, kMainWidth);
     drawMahoganyFrame (kSideX, kViewWidth - kSideX);
     [self drawSidecarBackdrop];

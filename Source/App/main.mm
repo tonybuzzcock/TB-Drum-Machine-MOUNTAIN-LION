@@ -529,19 +529,36 @@ static void loadKits (AppCore* c)
     else loadKits (gCore);
 
     window = [[NSWindow alloc] initWithContentRect: NSMakeRect (0, 0, kViewWidth, kViewHeight)
-                                         styleMask: NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask
+                                         styleMask: NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask
                                            backing: NSBackingStoreBuffered defer: NO];
     [window setTitle: @"TB Drum Machine"];
     [window setReleasedWhenClosed: NO];
     [window setDelegate: self];
     view = [[TBDrumMachineView alloc] initWithFrame: NSMakeRect (0, 0, kViewWidth, kViewHeight) core: gCore];
     [window setContentView: view];
+    [view setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable];
+    // resize from the corner, keeping the panel's proportions
+    [window setContentAspectRatio: NSMakeSize (kViewWidth, kViewHeight)];
+    [window setContentMinSize: NSMakeSize (kViewWidth * 0.5, kViewHeight * 0.5)];
+    [window setContentMaxSize: NSMakeSize (kViewWidth * 2.0, kViewHeight * 2.0)];
     [view setPage: st.page];
 
     if (gCore->testMode)
     {
         [self runSelfTest];
         return;
+    }
+    // first launch: as big as fits the screen, up to full size; after that the
+    // size and place it was left at
+    {
+        const NSRect vis = [[NSScreen mainScreen] visibleFrame];
+        CGFloat sc = 1.0;
+        const NSRect fr = [window frameRectForContentRect: NSMakeRect (0, 0, kViewWidth, kViewHeight)];
+        const CGFloat chromeH = fr.size.height - kViewHeight;
+        if (kViewWidth > vis.size.width - 20.0) sc = (vis.size.width - 20.0) / kViewWidth;
+        if (kViewHeight * sc > vis.size.height - chromeH - 20.0) sc = (vis.size.height - chromeH - 20.0) / kViewHeight;
+        if (sc < 0.5) sc = 0.5;
+        [window setContentSize: NSMakeSize (std::floor (kViewWidth * sc), std::floor (kViewHeight * sc))];
     }
     [window center];
     [window setFrameAutosaveName: @"TBDrumMachineWindow"];
@@ -804,6 +821,17 @@ static void loadKits (AppCore* c)
     [self check: loadSession (gCore->sessionPath.c_str(), back, st) && std::strcmp (back.patterns[0].name, "Friday night 707 groove") == 0
                  && back.numEntries == 2 && st.page == kPageSteps
            what: "session saved and reopened"];
+
+    // scaling: the window at 70 %, the panel still answers at the right places
+    [window setContentSize: NSMakeSize (std::floor (kViewWidth * 0.7), std::floor (kViewHeight * 0.7))];
+    [self check: std::fabs ([view bounds].size.width - kViewWidth) < 0.5 && std::fabs ([view frame].size.width - std::floor (kViewWidth * 0.7)) < 1.0
+           what: "window at 70 %: the panel keeps its own coordinates"];
+    [self click: [view rectForTab: kPagePads]];
+    [self check: [view page] == kPagePads what: "...and a click on PADS still lands"];
+    [self shot: "scaled_70"];
+    [window setContentSize: NSMakeSize (std::floor (kViewWidth * 1.3), std::floor (kViewHeight * 1.3))];
+    [self click: [view rectForTab: kPageSteps]];
+    [self check: [view page] == kPageSteps what: "window at 130 %: a click on STEPS lands"];
 
     std::printf (failures ? "\n%d FAILED\n" : "\nAll panel tests passed\n", failures);
     [view shutdown];
