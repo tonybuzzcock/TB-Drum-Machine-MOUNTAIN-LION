@@ -508,10 +508,26 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     showPatternInReadout = false;
 }
 
+// What the readout shows: a message, the last thing touched, or the pattern
+- (void) composeReadout: (char*) text size: (size_t) size
+{
+    tbdm::Engine& e = core->engine;
+    const int cp = e.currentPattern();
+    if (messageUntil > [NSDate timeIntervalSinceReferenceDate]) std::snprintf (text, size, "%s", message);
+    else if (showPatternInReadout || ! readout[0])
+    {
+        const tbdm::Pattern& P = e.song().patterns[cp];
+        if (P.name[0]) std::snprintf (text, size, "%d   %s", cp + 1, P.name);
+        else std::snprintf (text, size, "PATTERN %d   %s KIT", cp + 1, kitDef (P.kit).name);
+    }
+    else std::snprintf (text, size, "%s", readout);
+}
+
 - (const char*) readoutText
 {
-    if (messageUntil > [NSDate timeIntervalSinceReferenceDate]) return message;
-    return readout;
+    static char t[160];
+    [self composeReadout: t size: sizeof (t)];
+    return t;
 }
 
 - (NSTextField*) nameField { return nameField; }
@@ -1106,14 +1122,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         drawButton (patBtnRect (i), (i == 3 && armed) ? "AGAIN" : labs[i], i == 3 && armed, kRed, 11.5, i != 2 || clipboardFull);
 
     char text[160];
-    if (messageUntil > [NSDate timeIntervalSinceReferenceDate]) std::snprintf (text, sizeof (text), "%s", message);
-    else if (showPatternInReadout || ! readout[0])
-    {
-        const tbdm::Pattern& P = e.song().patterns[cp];
-        if (P.name[0]) std::snprintf (text, sizeof (text), "%d   %s", cp + 1, P.name);
-        else std::snprintf (text, sizeof (text), "PATTERN %d   %s KIT", cp + 1, kitDef (P.kit).name);
-    }
-    else std::snprintf (text, sizeof (text), "%s", readout);
+    [self composeReadout: text size: sizeof (text)];
     if (! nameField) [self drawLimeBox: kReadout text: text size: 18.0];
     else [self drawLimeBox: kReadout text: 0 size: 18.0];
 
