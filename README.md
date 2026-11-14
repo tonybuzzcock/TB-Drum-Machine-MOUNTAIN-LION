@@ -74,9 +74,12 @@ Knobs: drag up and down (hold Shift for fine changes), double-click to reset, or
 - **MIDI notes in** (any channel) play the pads, using General MIDI drum notes: 36/35 kick,
   38/40 snare, 45/47/48/50 toms, 37 rim, 56 cowbell, 39 clap, 54 tamb, 42/46 hats, 49 crash, 51 ride
   (CR-78 conga 64, bongo 60, cabassa 69). Velocity 112 and up counts as accented.
-- **EXPORT WAV**: the song once through, or the current pattern 1–32 times, rendered
-  offline as 24-bit stereo (44.1 or 48 kHz, following the audio device), with the last hits'
-  tail.
+- **EXPORT AUDIO**: the song once through, or the current pattern 1–32 times, rendered offline
+  as 24-bit stereo at **44.1 or 48 kHz**. You can export a **stereo mix**, **separate tracks** or
+  **both**. Separate tracks are one WAV per pad that plays (`01 KICK.wav`, `02 SNARE.wav`… in panel
+  order), each with its own level, pan, tune and decay, and all the full length of the mix so they
+  line up from bar 1 in a DAW. They go in a folder named after the file (`My Song Tracks`). Muted
+  pads still get a track. The last hits' tail is included.
 - **EXPORT MIDI**: the same choice as a Standard MIDI File (type 0, 96 PPQN, channel 10,
   GM drum notes). Accents are velocity 127, other hits 100, and the tempo is included.
   Flams export as one note.

@@ -210,6 +210,8 @@ public:
     void setStopAfterPatterns (int n) { stopAfter = n; patternEnds = 0; }
     bool sequencerFinished() const { return seqFinished; }
     bool voicesSilent() const;
+    // Offline: only this pad is heard (-1 = all, with mute and solo as set)
+    void setOnlyPad (int pad) { onlyPad = pad; }
 
     // For tests
     int hitsFired() const { return fired; }
@@ -241,6 +243,7 @@ private:
     double pos;                    // position in the current pattern, in steps
     int lastStep;
     int stopAfter, patternEnds;
+    int onlyPad;
     bool seqFinished;
 
     bool extSync, extRunning;

@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <string>
 #include <algorithm>
 
 namespace tbdm
@@ -320,25 +321,28 @@ bool exportMidi (const char* path, const Song& s, const ExportRange& r)
 //==============================================================================
 // WAV
 
-bool exportWav (const char* path, const Song& song, const KitBank& kits, const ExportRange& r,
-                int rate, double tailSeconds, long* framesOut)
+// Renders the range offline into L/R. onlyPad: -1 = the mix, else that pad
+// alone. fixedFrames > 0: exactly that long; otherwise until the tail dies away.
+static long renderRange (const Song& song, const KitBank& kits, const ExportRange& r, int rate, double tailSeconds,
+                         int onlyPad, long fixedFrames, std::vector<float>& L, std::vector<float>& R)
 {
     Engine* e = new Engine (&kits);
     e->setSampleRate (rate);
     e->song() = song;
+    e->setOnlyPad (onlyPad);
     const bool whole = r.wholeSong && song.numEntries > 0;
     e->setSongMode (whole);
     if (! whole) e->selectPattern (clampi (r.pattern, 0, kNumPatterns - 1));
     e->setStopAfterPatterns (exportPatternCount (song, r));
     e->play();
 
-    // length of the sequence, to size the buffer
     double steps = 0.0;
     for (int n = 0; n < exportPatternCount (song, r); ++n)
         steps += clampi (song.patterns[patternAt (song, r, n)].length, 1, kMaxSteps);
     const double secs = steps * 15.0 / clampf (song.tempo, 30.0f, 300.0f);
-    const long maxFrames = (long) ((secs + tailSeconds) * rate) + 4096;
-    std::vector<float> L ((size_t) maxFrames), R ((size_t) maxFrames);
+    const long maxFrames = fixedFrames > 0 ? fixedFrames : (long) ((secs + tailSeconds) * rate) + 4096;
+    L.assign ((size_t) maxFrames, 0.0f);
+    R.assign ((size_t) maxFrames, 0.0f);
 
     const int block = 256;
     long done = 0;
@@ -348,9 +352,8 @@ bool exportWav (const char* path, const Song& song, const KitBank& kits, const E
         const int n = (int) std::min ((long) block, maxFrames - done);
         e->render (&L[(size_t) done], &R[(size_t) done], n);
         done += n;
-        if (e->sequencerFinished())
+        if (fixedFrames <= 0 && e->sequencerFinished())
         {
-            // stop once the tail has died away
             float peak = 0.0f;
             for (int i = 0; i < n; ++i) peak = std::max (peak, std::max (std::fabs (L[(size_t) (done - n + i)]), std::fabs (R[(size_t) (done - n + i)])));
             silentRun = (peak < 1e-5f || e->voicesSilent()) ? silentRun + n : 0;
@@ -358,8 +361,73 @@ bool exportWav (const char* path, const Song& song, const KitBank& kits, const E
         }
     }
     delete e;
+    return done;
+}
+
+bool exportWav (const char* path, const Song& song, const KitBank& kits, const ExportRange& r,
+                int rate, double tailSeconds, long* framesOut)
+{
+    std::vector<float> L, R;
+    const long done = renderRange (song, kits, r, rate, tailSeconds, -1, 0, L, R);
     if (framesOut) *framesOut = done;
     return writeWav24 (path, &L[0], &R[0], done, rate);
+}
+
+// Does this pad play anywhere in the range (a step on, in its track, in a kit that has it)?
+static bool padPlays (const Song& s, const KitBank& kits, const ExportRange& r, int pad)
+{
+    for (int n = 0; n < exportPatternCount (s, r); ++n)
+    {
+        const Pattern& P = s.patterns[patternAt (s, r, n)];
+        if (! kits.padAvailable (P.kit, pad)) continue;
+        const Track& T = P.tracks[pad];
+        const int tl = clampi (T.length, 1, kMaxSteps);
+        const int Lp = clampi (P.length, 1, kMaxSteps);
+        for (int k = 0; k < Lp; ++k)
+            if (T.steps[k % tl].on) return true;
+    }
+    return false;
+}
+
+int exportWavTracks (const char* dir, const Song& song, const KitBank& kits, const ExportRange& r,
+                     int rate, double tailSeconds, const int* order, long* framesOut)
+{
+    // the mix sets the length every track gets
+    std::vector<float> L, R;
+    const long frames = renderRange (song, kits, r, rate, tailSeconds, -1, 0, L, R);
+    if (framesOut) *framesOut = frames;
+
+    // names from the kit, when the whole range uses one kit
+    int kit = -1;
+    bool oneKit = true;
+    for (int n = 0; n < exportPatternCount (song, r); ++n)
+    {
+        const int k = song.patterns[patternAt (song, r, n)].kit;
+        if (kit < 0) kit = k;
+        else if (k != kit) oneKit = false;
+    }
+    static const char* const generic[kNumPads] = { "KICK", "SNARE", "LOW TOM", "MID TOM", "HI TOM", "RIM-COW", "CLAP-TAMB",
+                                                   "HI-HAT", "CRASH", "RIDE", "MID TOM 2" };
+    int written = 0;
+    for (int i = 0; i < kNumPads; ++i)
+    {
+        const int pad = order ? order[i] : i;
+        if (pad < 0 || pad >= kNumPads || ! padPlays (song, kits, r, pad)) continue;
+        std::string name = (oneKit && kit >= 0 && kitDef (kit).pads[pad].numChoices > 0) ? kitDef (kit).pads[pad].label : generic[pad];
+        // "CLAP / TAMB" -> "CLAP-TAMB" (no slashes in file names)
+        std::string clean;
+        for (size_t c = 0; c < name.size(); ++c)
+        {
+            if (name[c] == '/') { while (! clean.empty() && clean[clean.size() - 1] == ' ') clean.erase (clean.size() - 1); clean += '-'; while (c + 1 < name.size() && name[c + 1] == ' ') ++c; }
+            else clean += name[c];
+        }
+        renderRange (song, kits, r, rate, tailSeconds, pad, frames, L, R);
+        char path[2300];
+        std::snprintf (path, sizeof (path), "%s/%02d %s.wav", dir, written + 1, clean.c_str());
+        if (! writeWav24 (path, &L[0], &R[0], frames, rate)) return -1;
+        ++written;
+    }
+    return written;
 }
 
 } // namespace tbdm

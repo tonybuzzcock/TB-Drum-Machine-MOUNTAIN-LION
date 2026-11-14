@@ -274,7 +274,7 @@ Engine::Engine (const KitBank* k)
     : kits (k), fs (44100.0),
       playing (false), recording (false), songOn (false),
       curPattern (0), queued (-1), songIndex (0), songRepeat (0),
-      pos (0.0), lastStep (0), stopAfter (0), patternEnds (0), seqFinished (false),
+      pos (0.0), lastStep (0), stopAfter (0), patternEnds (0), onlyPad (-1), seqFinished (false),
       extSync (false), extRunning (false), extClocks (0), extAbs (0.0), extTempo (0.0f), clockAvg (0.0),
       sampleClock (0), fired (0), log (0), logCap (0), logCount (0)
 {
@@ -606,7 +606,7 @@ void Engine::render (float* L, float* R, int n)
     for (int pad = 0; pad < kNumPads; ++pad)
     {
         const Channel& ch = data.channels[pad];
-        const bool audible = ! ch.mute && (anySolo ? ch.solo : true);
+        const bool audible = onlyPad >= 0 ? pad == onlyPad : (! ch.mute && (anySolo ? ch.solo : true));
         const float pan = ch.pan < -1.0f ? -1.0f : (ch.pan > 1.0f ? 1.0f : ch.pan);
         const double ang = (pan + 1.0) * 0.25 * M_PI;
         const float lvl = audible ? ch.level * ch.level * data.master : 0.0f;

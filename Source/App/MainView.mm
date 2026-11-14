@@ -1346,7 +1346,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     if (! nameField) [self drawLimeBox: kReadout text: text size: 18.0];
     else [self drawLimeBox: kReadout text: 0 size: 18.0];
 
-    drawButton (kExportWav, "EXPORT WAV", false, kRed, 14.0);
+    drawButton (kExportWav, "EXPORT AUDIO", false, kRed, 14.0);
     drawButton (kExportMidi, "EXPORT MIDI", false, kRed, 14.0);
 }
 
@@ -1769,18 +1769,24 @@ static std::string cleanName (const char* s)
 //------------------------------------------------------------------------------
 // Export
 
-// Which range: the whole song or the current pattern (times n). Test mode skips
-// the questions and the save panel.
+// Which range: the whole song or the current pattern (times n), and for audio
+// what to write (stereo mix, separate tracks or both) at 44.1 or 48 kHz. Test
+// mode skips the questions and the save panel.
 - (BOOL) askRange: (tbdm::ExportRange&) r path: (std::string&) path type: (NSString*) ext title: (NSString*) title
+             audio: (bool) audio mode: (int&) mode rate: (int&) rate
 {
     tbdm::Engine& e = core->engine;
     r.wholeSong = false;
     r.pattern = e.currentPattern();
     r.loops = 1;
+    mode = 0;
+    rate = 44100;
     if (core->testMode)
     {
         r.wholeSong = e.song().numEntries > 0;
         r.loops = 2;
+        mode = 2;
+        rate = 48000;
         path = core->testExportDir + (r.wholeSong ? "/song." : "/pattern.") + [ext UTF8String];
         return YES;
     }
@@ -1791,20 +1797,45 @@ static std::string cleanName (const char* s)
     if (e.song().numEntries > 0) [a addButtonWithTitle: @"Song"];
     [a addButtonWithTitle: [NSString stringWithFormat: @"Pattern %d", e.currentPattern() + 1]];
     [a addButtonWithTitle: @"Cancel"];
-    NSPopUpButton* times = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, 0, 200, 26) pullsDown: NO] autorelease];
+
+    const CGFloat rowH = 30.0;
+    const int rows = audio ? 3 : 1;
+    NSView* acc = [[[NSView alloc] initWithFrame: NSMakeRect (0, 0, 260, rows * rowH)] autorelease];
+    NSPopUpButton* times = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, (rows - 1) * rowH, 260, 26) pullsDown: NO] autorelease];
     const int counts[6] = { 1, 2, 4, 8, 16, 32 };
     for (int i = 0; i < 6; ++i) [times addItemWithTitle: [NSString stringWithFormat: @"Pattern %d time%s", counts[i], counts[i] > 1 ? "s" : ""]];
-    [a setAccessoryView: times];
+    [acc addSubview: times];
+    NSPopUpButton* what = nil;
+    NSPopUpButton* rates = nil;
+    if (audio)
+    {
+        what = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, rowH, 260, 26) pullsDown: NO] autorelease];
+        [what addItemWithTitle: @"Stereo mix (one WAV)"];
+        [what addItemWithTitle: @"Separate tracks (one WAV per pad)"];
+        [what addItemWithTitle: @"Both: stereo mix and separate tracks"];
+        [acc addSubview: what];
+        rates = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, 0, 260, 26) pullsDown: NO] autorelease];
+        [rates addItemWithTitle: @"44.1 kHz, 24-bit"];
+        [rates addItemWithTitle: @"48 kHz, 24-bit"];
+        [acc addSubview: rates];
+    }
+    [a setAccessoryView: acc];
     const NSInteger b = [a runModal];
     const bool hasSong = e.song().numEntries > 0;
     if (hasSong && b == NSAlertFirstButtonReturn) r.wholeSong = true;
     else if ((hasSong && b == NSAlertSecondButtonReturn) || (! hasSong && b == NSAlertFirstButtonReturn))
         r.loops = counts[clampi ((int) [times indexOfSelectedItem], 0, 5)];
     else return NO;
+    if (audio)
+    {
+        mode = clampi ((int) [what indexOfSelectedItem], 0, 2);
+        rate = [rates indexOfSelectedItem] == 1 ? 48000 : 44100;
+    }
 
     NSSavePanel* sp = [NSSavePanel savePanel];
     [sp setAllowedFileTypes: [NSArray arrayWithObject: ext]];
     [sp setTitle: title];
+    if (audio && mode == 1) [sp setMessage: @"The tracks go in a folder named after this file."];
     const tbdm::Pattern& P = e.song().patterns[r.pattern];
     NSString* base = r.wholeSong ? @"TB Drum Machine Song"
                                  : (P.name[0] ? str (P.name) : [NSString stringWithFormat: @"TB Drum Machine Pattern %d", r.pattern + 1]);
@@ -1817,20 +1848,41 @@ static std::string cleanName (const char* s)
 - (void) exportWav: (id) sender
 {
     (void) sender;
-    ExportRange r;
+    tbdm::ExportRange r;
     std::string path;
-    if (! [self askRange: r path: path type: @"wav" title: @"Export WAV"]) return;
+    int mode = 0, rate = 44100;
+    if (! [self askRange: r path: path type: @"wav" title: @"Export Audio" audio: true mode: mode rate: rate]) return;
     tbdm::Song copy;
     core->engine.lock();
     copy = core->engine.song();
     core->engine.unlock();
-    const int rate = (int) (core->engine.sampleRate() >= 88200.0 ? core->engine.sampleRate() : (core->engine.sampleRate() >= 48000.0 ? 48000 : 44100));
-    long frames = 0;
-    const bool ok = exportWav (path.c_str(), copy, core->kits, r, rate, 4.0, &frames);
-    char t[160];
+    [self showMessage: "EXPORTING..."];
+    [self display];
+
     const char* fn = std::strrchr (path.c_str(), '/');
-    if (ok) std::snprintf (t, sizeof (t), "EXPORTED %s  (%.1f s)", fn ? fn + 1 : path.c_str(), frames / (double) rate);
-    else std::snprintf (t, sizeof (t), "COULDN'T WRITE %s", fn ? fn + 1 : path.c_str());
+    fn = fn ? fn + 1 : path.c_str();
+    long frames = 0;
+    bool ok = true;
+    int tracks = 0;
+    if (mode == 0 || mode == 2) ok = tbdm::exportWav (path.c_str(), copy, core->kits, r, rate, 4.0, &frames);
+    if (ok && (mode == 1 || mode == 2))
+    {
+        // "My Song.wav" -> folder "My Song Tracks" beside it
+        std::string dir = path;
+        if (dir.size() > 4 && dir.compare (dir.size() - 4, 4, ".wav") == 0) dir.erase (dir.size() - 4);
+        dir += " Tracks";
+        [[NSFileManager defaultManager] createDirectoryAtPath: str (dir.c_str()) withIntermediateDirectories: YES attributes: nil error: nil];
+        int order[kNumPads];
+        for (int i = 0; i < kNumPads; ++i) order[i] = padAt (i);
+        tracks = tbdm::exportWavTracks (dir.c_str(), copy, core->kits, r, rate, 4.0, order, &frames);
+        ok = tracks >= 0;
+    }
+    char t[200];
+    const char* khz = rate == 48000 ? "48 kHz" : "44.1 kHz";
+    if (! ok) std::snprintf (t, sizeof (t), "COULDN'T WRITE %s", fn);
+    else if (mode == 0) std::snprintf (t, sizeof (t), "EXPORTED %s  (%.1f s, %s)", fn, frames / (double) rate, khz);
+    else if (mode == 1) std::snprintf (t, sizeof (t), "EXPORTED %d TRACKS  (%.1f s, %s)", tracks, frames / (double) rate, khz);
+    else std::snprintf (t, sizeof (t), "EXPORTED %s + %d TRACKS  (%s)", fn, tracks, khz);
     [self showMessage: t];
 }
 
@@ -1839,7 +1891,8 @@ static std::string cleanName (const char* s)
     (void) sender;
     ExportRange r;
     std::string path;
-    if (! [self askRange: r path: path type: @"mid" title: @"Export MIDI"]) return;
+    int mode = 0, rate = 0;
+    if (! [self askRange: r path: path type: @"mid" title: @"Export MIDI" audio: false mode: mode rate: rate]) return;
     tbdm::Song copy;
     core->engine.lock();
     copy = core->engine.song();

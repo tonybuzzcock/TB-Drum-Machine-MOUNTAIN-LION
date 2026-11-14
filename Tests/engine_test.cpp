@@ -16,6 +16,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <sys/stat.h>
 
 using namespace tbdm;
 
@@ -421,6 +422,45 @@ int main (int argc, char** argv)
         check (e > 1.0, "has sound");
         delete[] d;
         std::remove (path);
+    }
+
+    std::printf ("Separate tracks\n");
+    {
+        Song s;
+        s.setDefaults();
+        s.master = 0.4f;
+        for (int k = 0; k < 16; k += 4) setStep (s.patterns[0], 0, k);
+        setStep (s.patterns[0], 7, 2, 1);
+        setStep (s.patterns[0], 6, 12, 0);
+        s.channels[7].pan = -0.6f;
+        s.channels[6].mute = true;       // muted in the mix, but still gets its own track
+        ExportRange r = { false, 0, 2 };
+        const char* dir = "/tmp/tbdm_tracks";
+        mkdir (dir, 0755);
+        const int order[kNumPads] = { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 };
+        long frames = 0;
+        const int n = exportWavTracks (dir, s, kb, r, 44100, 2.0, order, &frames);
+        check (n == 3, "three pads play: three tracks");
+        float *a = 0, *b = 0, *c = 0;
+        int na = 0, nb = 0, nc = 0;
+        double ra, rb, rc;
+        const bool ok = readWav ("/tmp/tbdm_tracks/01 KICK.wav", a, na, ra) && readWav ("/tmp/tbdm_tracks/02 HI-HAT.wav", b, nb, rb)
+                        && readWav ("/tmp/tbdm_tracks/03 CLAP-TAMB.wav", c, nc, rc);
+        check (ok, "named 01 KICK, 02 HI-HAT, 03 CLAP-TAMB in panel order");
+        check (ok && na == frames && nb == frames && nc == frames, "every track as long as the mix");
+        // the unmuted tracks add up to the mix (levels low enough that the limiter stays out)
+        s.channels[6].mute = false;
+        s.channels[6].level = 0.0f;
+        exportWav ("/tmp/tbdm_tracks/mix.wav", s, kb, r, 44100, 2.0);
+        float* m = 0;
+        int nm = 0;
+        double rm;
+        double err = 0.0, tot = 0.0;
+        if (ok && readWav ("/tmp/tbdm_tracks/mix.wav", m, nm, rm))
+            for (int i = 0; i < nm && i < na; ++i) { err += std::fabs (m[i] - (a[i] + b[i])); tot += std::fabs (m[i]); }
+        check (tot > 1.0 && err / tot < 0.001, "kick + hat tracks sum to the mix");
+        delete[] a; delete[] b; delete[] c; delete[] m;
+        std::system ("rm -rf /tmp/tbdm_tracks");
     }
 
     std::printf ("WAV reading\n");

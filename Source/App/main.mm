@@ -11,6 +11,7 @@
 #include <mach/mach_time.h>
 
 #include "AppCore.h"
+#include "../Engine/Wav.h"
 #import "MainView.h"
 
 #include <cmath>
@@ -335,7 +336,7 @@ static void loadKits (AppCore* c)
     [self addItem: file title: @"Open Session…" action: @selector (openSession:) key: @"o" mods: NSCommandKeyMask];
     [self addItem: file title: @"Save Session As…" action: @selector (saveSessionAs:) key: @"s" mods: NSCommandKeyMask];
     [file addItem: [NSMenuItem separatorItem]];
-    [self addItem: file title: @"Export WAV…" action: @selector (exportWav:) key: @"e" mods: NSCommandKeyMask];
+    [self addItem: file title: @"Export Audio…" action: @selector (exportWav:) key: @"e" mods: NSCommandKeyMask];
     [self addItem: file title: @"Export MIDI…" action: @selector (exportMidi:) key: @"e" mods: NSCommandKeyMask | NSShiftKeyMask];
     [fileItem setSubmenu: file];
     [bar addItem: fileItem];
@@ -748,7 +749,12 @@ static void loadKits (AppCore* c)
     NSFileManager* fm = [NSFileManager defaultManager];
     NSDictionary* wa = [fm attributesOfItemAtPath: [NSString stringWithUTF8String: (testDir + "/song.wav").c_str()] error: nil];
     NSDictionary* ma = [fm attributesOfItemAtPath: [NSString stringWithUTF8String: (testDir + "/song.mid").c_str()] error: nil];
-    [self check: wa && [wa fileSize] > 100000 what: "EXPORT WAV wrote the song"];
+    [self check: wa && [wa fileSize] > 100000 what: "EXPORT AUDIO wrote the stereo mix"];
+    NSArray* tracks = [fm contentsOfDirectoryAtPath: [NSString stringWithUTF8String: (testDir + "/song Tracks").c_str()] error: nil];
+    [self check: [tracks count] >= 3 && [tracks containsObject: @"01 KICK.wav"] what: "...and the separate tracks, 01 KICK.wav first"];
+    float* d = 0; int nf = 0; double sr = 0;
+    [self check: tbdm::readWav ((testDir + "/song.wav").c_str(), d, nf, sr) && sr == 48000.0 what: "...at 48 kHz"];
+    delete[] d;
     [self check: ma && [ma fileSize] > 40 what: "EXPORT MIDI wrote the song"];
     [self shot: "exported"];
 
