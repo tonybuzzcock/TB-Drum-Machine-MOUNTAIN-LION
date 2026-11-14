@@ -55,7 +55,7 @@ bool saveSession (const char* path, const Song& s, const SessionState& st)
     std::snprintf (tmp, sizeof (tmp), "%s.tmp", path);
     FILE* f = std::fopen (tmp, "w");
     if (! f) return false;
-    std::fprintf (f, "TB Drum Machine 1\n");
+    std::fprintf (f, "TB Drum Machine 2\n");
     std::fprintf (f, "tempo %.3f\nswing %.4f\naccent %.4f\nmaster %.4f\n", s.tempo, s.swing, s.accent, s.master);
     std::fprintf (f, "current %d\nsongmode %d\nsync %d\npage %d\n", st.currentPattern, st.songMode ? 1 : 0,
                   st.externalSync ? 1 : 0, st.page);
@@ -98,6 +98,8 @@ bool loadSession (const char* path, Song& out, SessionState& st)
         std::fclose (f);
         return false;
     }
+    int version = 1;
+    std::sscanf (line, "TB Drum Machine %d", &version);
     Song s;
     s.setDefaults();
     SessionState ss;
@@ -150,6 +152,7 @@ bool loadSession (const char* path, Song& out, SessionState& st)
         }
         else if (std::sscanf (line, "track %d %d %63s", &i, &j, buf) == 3 && curP >= 0)
         {
+            if (version < 2 && i == 10) i = kAccentTrack;     // version 1 had ten pads, accent was track 10
             if (i < 0 || i >= kNumTracks) continue;
             Track& T = s.patterns[curP].tracks[i];
             T.length = clampi (j, 1, kMaxSteps);

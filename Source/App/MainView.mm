@@ -43,8 +43,8 @@ const NSRect kLengthRect = { { 560.0, 114.0 }, { 180.0, 32.0 } };
 inline NSRect modeRect (int i) { return NSMakeRect (770.0 + i * 98.0, kTabY, 90.0, kTabH); }
 
 // Every page shows the pads in the user's order: Kick, Snare, Hi-Hat, Hi Tom,
-// Mid Tom, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
-const int kPadOrder[kNumPads] = { 0, 1, 7, 4, 3, 2, 8, 9, 6, 5 };
+// Mid Tom (1), Mid Tom 2, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
+const int kPadOrder[kNumPads] = { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 };
 inline int padPos (int pad)
 {
     for (int i = 0; i < kNumPads; ++i) if (kPadOrder[i] == pad) return i;
@@ -52,37 +52,41 @@ inline int padPos (int pad)
 }
 
 // Steps page
-const CGFloat kRowY0 = 186.0, kRowPitch = 40.0, kCellH = 30.0;
+const CGFloat kRowY0 = 184.0, kRowPitch = 36.0, kCellH = 28.0;
 const CGFloat kGridX0 = 356.0, kStepPitch = 24.0, kCellW = 21.0;
 inline CGFloat cellX (int k) { return kGridX0 + k * kStepPitch + (k / 4) * 3.0; }
-inline NSRect cellRect (int row, int k) { return NSMakeRect (cellX (k), kRowY0 + row * kRowPitch + 5.0, kCellW, kCellH); }
-inline NSRect rowChoiceRect (int row) { return NSMakeRect (140.0, kRowY0 + row * kRowPitch + 8.0, 94.0, 24.0); }
-inline NSRect rowLenRect (int row) { return NSMakeRect (240.0, kRowY0 + row * kRowPitch + 8.0, 58.0, 24.0); }
-inline NSRect rowMuteRect (int row) { return NSMakeRect (303.0, kRowY0 + row * kRowPitch + 8.0, 22.0, 24.0); }
-inline NSRect rowSoloRect (int row) { return NSMakeRect (328.0, kRowY0 + row * kRowPitch + 8.0, 22.0, 24.0); }
+inline NSRect cellRect (int row, int k) { return NSMakeRect (cellX (k), kRowY0 + row * kRowPitch + 4.0, kCellW, kCellH); }
+inline NSRect rowChoiceRect (int row) { return NSMakeRect (140.0, kRowY0 + row * kRowPitch + 6.0, 94.0, 24.0); }
+inline NSRect rowLenRect (int row) { return NSMakeRect (240.0, kRowY0 + row * kRowPitch + 6.0, 58.0, 24.0); }
+inline NSRect rowMuteRect (int row) { return NSMakeRect (303.0, kRowY0 + row * kRowPitch + 6.0, 22.0, 24.0); }
+inline NSRect rowSoloRect (int row) { return NSMakeRect (328.0, kRowY0 + row * kRowPitch + 6.0, 22.0, 24.0); }
 // rows top to bottom (the user's order): Accent, Kick, Snare, Hi-Hat, Hi Tom,
-// Mid Tom, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
+// Mid Tom 1, Mid Tom 2, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
 inline int rowTrack (int row) { return row == 0 ? kAccentTrack : kPadOrder[row - 1]; }
 
 // Pads page
 inline NSRect padRect (int pad)
 {
     const int i = padPos (pad);
-    return NSMakeRect (40.0 + (i % 5) * 224.0, (i < 5 ? 194.0 : 428.0), 196.0, 146.0);
+    // six pads on the top row, five below
+    const int col = i < 6 ? i : i - 6;
+    const CGFloat x0 = i < 6 ? 42.0 : 135.0;
+    return NSMakeRect (x0 + col * 186.0, (i < 6 ? 194.0 : 428.0), 166.0, 146.0);
 }
 inline NSRect padFlamRect (int pad, int i)
 {
     const NSRect p = padRect (pad);
-    return NSMakeRect (p.origin.x + i * 66.0, NSMaxY (p) + 10.0, 64.0, 24.0);
+    return NSMakeRect (p.origin.x + i * 56.0, NSMaxY (p) + 10.0, 54.0, 24.0);
 }
 
 // Mixer page
-inline CGFloat mixX (int ch) { return 24.0 + padPos (ch) * 114.0; }
+const CGFloat kMixPitch = 103.0, kMixCx = 48.0;   // eleven channel strips
+inline CGFloat mixX (int ch) { return 24.0 + padPos (ch) * kMixPitch; }
 const CGFloat kMixTuneY = 238.0, kMixDecayY = 326.0, kMixPanY = 414.0, kMixKnobR = 20.0;
 const CGFloat kFaderTop = 458.0, kFaderBot = 582.0;
-inline NSRect faderRect (int ch) { return NSMakeRect (mixX (ch) + 36.0, kFaderTop - 10.0, 32.0, kFaderBot - kFaderTop + 20.0); }
-inline NSRect mixMuteRect (int ch) { return NSMakeRect (mixX (ch) + 6.0, 596.0, 44.0, 24.0); }
-inline NSRect mixSoloRect (int ch) { return NSMakeRect (mixX (ch) + 54.0, 596.0, 44.0, 24.0); }
+inline NSRect faderRect (int ch) { return NSMakeRect (mixX (ch) + kMixCx - 16.0, kFaderTop - 10.0, 32.0, kFaderBot - kFaderTop + 20.0); }
+inline NSRect mixMuteRect (int ch) { return NSMakeRect (mixX (ch) + 3.0, 596.0, 43.0, 24.0); }
+inline NSRect mixSoloRect (int ch) { return NSMakeRect (mixX (ch) + 50.0, 596.0, 43.0, 24.0); }
 
 // Song page
 inline NSRect songCell (int i) { return NSMakeRect (24.0 + (i % 8) * 118.0, 170.0 + (i / 8) * 57.0, 112.0, 52.0); }
@@ -840,7 +844,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     {
         for (int ch = 0; ch < kNumPads; ++ch)
         {
-            const CGFloat cx = mixX (ch) + 52.0;
+            const CGFloat cx = mixX (ch) + kMixCx;
             const CGFloat ys[3] = { kMixTuneY, kMixDecayY, kMixPanY };
             const int base[3] = { kKTune, kKDecay, kKPan };
             for (int j = 0; j < 3; ++j)
@@ -1012,7 +1016,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         const bool used = tr == kAccentTrack || (kd.pads[tr].numChoices > 0 && core->kits.padAvailable (P.kit, tr));
         // name
         const char* nm = tr == kAccentTrack ? "ACCENT" : (kd.pads[tr].numChoices ? kd.pads[tr].label : "---");
-        drawText (nm, boldFont (fitSize (nm, 12.5, 116.0)), used ? ink : rgb (130, 132, 136), 20.0, y + 20.0, 0.0);
+        drawText (nm, boldFont (fitSize (nm, 12.5, 116.0)), used ? ink : rgb (130, 132, 136), 20.0, y + 18.0, 0.0);
         if (tr != kAccentTrack && kd.pads[tr].numChoices == 2)
             drawSlide2 (rowChoiceRect (row), kd.pads[tr].choiceLabel[0], kd.pads[tr].choiceLabel[1], rowChoice[tr] == 1, kAmber, used);
         char lt[8];
@@ -1149,7 +1153,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     NSColor* ink = [NSColor blackColor];
     for (int ch = 0; ch < kNumPads; ++ch)
     {
-        const CGFloat x = mixX (ch), cx = x + 52.0;
+        const CGFloat x = mixX (ch), cx = x + kMixCx;
         const tbdm::Channel& c = e.song().channels[ch];
         // strip divider
         if (padPos (ch) > 0)
@@ -1160,8 +1164,8 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
             NSRectFill (NSMakeRect (x - 5.0, 162.0, 1.0, 452.0));
         }
         const char* nm = kd.pads[ch].numChoices ? kd.pads[ch].label : "---";
-        drawText (nm, boldFont (fitSize (nm, 12.0, 84.0)), ink, cx - 6.0, 172.0);
-        drawLed (NSMakePoint (x + 98.0, 172.0), e.padFlash (ch), kRed);
+        drawText (nm, boldFont (fitSize (nm, 12.0, 78.0)), ink, cx - 6.0, 172.0);
+        drawLed (NSMakePoint (x + 90.0, 172.0), e.padFlash (ch), kRed);
         drawText ("TUNE", boldFont (10.0), ink, cx, kMixTuneY - 36.0);
         drawKnob (NSMakePoint (cx, kMixTuneY), kMixKnobR, [self knobValue: kKTune + ch], kCapOrange);
         drawEnds (NSMakePoint (cx, kMixTuneY), kMixKnobR, "-12", 0, "+12");
@@ -1965,7 +1969,7 @@ static std::string cleanName (const char* s)
             for (int s = 0; s < kMaxSteps; ++s)
                 if (inRect (p, cellRect (row, s))) { [self stepClick: row step: s]; return; }
             // clicking the row name plays the pad
-            if (tr != kAccentTrack && inRect (p, NSMakeRect (14.0, kRowY0 + row * kRowPitch + 4.0, 122.0, 32.0)))
+            if (tr != kAccentTrack && inRect (p, NSMakeRect (14.0, kRowY0 + row * kRowPitch + 2.0, 122.0, 32.0)))
             {
                 e.lock();
                 e.hitPad (tr, rowChoice[tr], 0, false);

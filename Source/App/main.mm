@@ -642,8 +642,8 @@ static void loadKits (AppCore* c)
     // steps: kick (row 1) step 3 on, then off by painting
     [self click: [view rectForStep: 2 row: 1]];
     [self check: e.song().patterns[0].tracks[0].steps[2].on == 1 what: "click a step: on"];
-    [self drag: NSMakePoint (NSMidX ([view rectForStep: 1 row: 7]), NSMidY ([view rectForStep: 1 row: 7]))
-            to: NSMakePoint (NSMidX ([view rectForStep: 5 row: 7]), NSMidY ([view rectForStep: 5 row: 7]))];
+    [self drag: NSMakePoint (NSMidX ([view rectForStep: 1 row: 8]), NSMidY ([view rectForStep: 1 row: 8]))
+            to: NSMakePoint (NSMidX ([view rectForStep: 5 row: 8]), NSMidY ([view rectForStep: 5 row: 8]))];
     bool painted = true;
     for (int k = 1; k <= 5; ++k) painted = painted && e.song().patterns[0].tracks[8].steps[k].on;
     [self check: painted what: "drag paints steps 2-6 on the crash row"];
@@ -697,9 +697,9 @@ static void loadKits (AppCore* c)
     // mixer
     [self click: [view rectForTab: kPageMixer]];
     const float before = e.song().channels[0].level;
-    [self drag: NSMakePoint (kPanelFrame + 24.0 + 52.0, kPanelFrame + 582.0 - 124.0 * before) to: NSMakePoint (kPanelFrame + 24.0 + 52.0, kPanelFrame + 582.0 - 124.0 * before + 40.0)];
+    [self drag: NSMakePoint (kPanelFrame + 24.0 + 48.0, kPanelFrame + 582.0 - 124.0 * before) to: NSMakePoint (kPanelFrame + 24.0 + 48.0, kPanelFrame + 582.0 - 124.0 * before + 40.0)];
     [self check: e.song().channels[0].level < before - 0.2f what: "fader drag lowers the kick level"];
-    [self drag: NSMakePoint (kPanelFrame + 24.0 + 114.0 * 2 + 52.0, kPanelFrame + 238.0) to: NSMakePoint (kPanelFrame + 24.0 + 114.0 * 2 + 52.0, kPanelFrame + 238.0 - 50.0)];
+    [self drag: NSMakePoint (kPanelFrame + 24.0 + 103.0 * 2 + 48.0, kPanelFrame + 238.0) to: NSMakePoint (kPanelFrame + 24.0 + 103.0 * 2 + 48.0, kPanelFrame + 238.0 - 50.0)];
     [self check: e.song().channels[7].tune > 2.0f what: "tune knob drag (3rd strip: hi-hat)"];
     [self shot: "mixer"];
 

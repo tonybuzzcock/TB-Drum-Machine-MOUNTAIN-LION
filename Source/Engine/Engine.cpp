@@ -11,9 +11,10 @@ namespace tbdm
 {
 
 //==============================================================================
-// The three kits, in the 707's pad order:
-//   0 Kick  1 Snare  2 Low Tom  3 Mid Tom  4 Hi Tom  5 Rim/Cowbell
-//   6 Clap/Tambourine  7 Hi-Hat (closed/open)  8 Crash  9 Ride
+// The three kits, in the 707's pad order, plus an 11th pad for the LM-1's
+// fourth tom:
+//   0 Kick  1 Snare  2 Low Tom  3 Mid Tom (1)  4 Hi Tom  5 Rim/Cowbell
+//   6 Clap/Tambourine  7 Hi-Hat (closed/open)  8 Crash  9 Ride  10 Mid Tom 2
 // File names are the user's own sample names. MIDI notes follow the General
 // MIDI drum map, so exported files play the right sounds in any GM drum kit.
 
@@ -32,7 +33,8 @@ static const KitDef kKits[kNumKits] = {
         { "CLAP / TAMB", 2, { "CLAP", "TAMB" },      { { "Clap 707.wav", 0, 0 }, { "Tambourine 707.wav", 0, 0 } }, { 39, 54 } },
         { "HI-HAT",      2, { "CLOSED", "OPEN" },    { { "CH 707.wav", 0, 0 }, { "OH 707.wav", 0, 0 } }, { 42, 46 } },
         { "CRASH",       1, { "", "" },              { { "Crash 707.wav", 0, 0 }, NOFILE }, { 49, 0 } },
-        { "RIDE",        1, { "", "" },              { { "Ride 707.wav", 0, 0 }, NOFILE }, { 51, 0 } } } },
+        { "RIDE",        1, { "", "" },              { { "Ride 707.wav", 0, 0 }, NOFILE }, { 51, 0 } },
+        UNUSED } },
 
     { "CR-78", "TB CR78", {
         { "KICK",        1, { "", "" },              { { "Kick CR78.wav", 0, 0 }, NOFILE }, { 36, 0 } },
@@ -44,19 +46,21 @@ static const KitDef kKits[kNumKits] = {
         { "CABASSA",     1, { "", "" },              { { "Cabassa CR78.wav", 0, 0 }, NOFILE }, { 69, 0 } },
         { "HI-HAT",      2, { "CLOSED", "OPEN" },    { { "Closed HiHat CR78.wav", 0, 0 }, { "Open HiHat CR78.wav", 0, 0 } }, { 42, 46 } },
         UNUSED,
+        UNUSED,
         UNUSED } },
 
     { "LM-1", "TB LM1", {
         { "KICK",        1, { "", "" },              { { "Kick LM1.wav", 0, 0 }, NOFILE }, { 36, 0 } },
         { "SNARE",       2, { "SN 01", "SN 02" },    { { "Snare 01 LM1.wav", 0, 0 }, { "Snare 02 LM1.wav", 0, 0 } }, { 38, 40 } },
         { "LOW TOM",     1, { "", "" },              { { "Tom 3 LM1.wav", 0, 0 }, NOFILE }, { 45, 0 } },
-        { "MID TOM",     1, { "", "" },              { { "Tom 2 LM1.wav", 0, 0 }, NOFILE }, { 47, 0 } },
+        { "MID TOM 1",   1, { "", "" },              { { "Tom 2 LM1.wav", 0, 0 }, NOFILE }, { 47, 0 } },
         { "HI TOM",      1, { "", "" },              { { "Tom 1 LM1.wav", 0, 0 }, NOFILE }, { 50, 0 } },
         UNUSED,
         UNUSED,
         { "HI-HAT",      2, { "CLOSED", "OPEN" },    { { "Closed HiHat LM1.wav", 0, 0 }, { "Open HiHat LM1.wav", 0, 0 } }, { 42, 46 } },
         { "CRASH",       1, { "", "" },              { { "Crash LM1.wav", 0, 0 }, NOFILE }, { 49, 0 } },
-        { "RIDE",        1, { "", "" },              { { "Ride LM1.wav", 0, 0 }, NOFILE }, { 51, 0 } } } }
+        { "RIDE",        1, { "", "" },              { { "Ride LM1.wav", 0, 0 }, NOFILE }, { 51, 0 } },
+        { "MID TOM 2",   1, { "", "" },              { { "Tom 4 LM1.wav", 0, 0 }, NOFILE }, { 48, 0 } } } }
 };
 
 #undef NOFILE
@@ -70,7 +74,7 @@ const KitDef& kitDef (int kit)
 
 // Generic pad notes: a controller playing these reaches the pad in any kit
 static const int kPadNotes[kNumPads][2] = {
-    { 36, 35 }, { 38, 40 }, { 45, 41 }, { 47, 48 }, { 50, 43 }, { 37, 56 }, { 39, 54 }, { 42, 46 }, { 49, 57 }, { 51, 59 }
+    { 36, 35 }, { 38, 40 }, { 45, 41 }, { 47, 0 }, { 50, 43 }, { 37, 56 }, { 39, 54 }, { 42, 46 }, { 49, 57 }, { 51, 59 }, { 48, 0 }
 };
 
 bool noteToPad (int kit, int note, int& pad, int& choice)
@@ -81,7 +85,7 @@ bool noteToPad (int kit, int note, int& pad, int& choice)
             if (k.pads[p].midiNote[c] == note) { pad = p; choice = c; return true; }
     for (int p = 0; p < kNumPads; ++p)
         for (int c = 0; c < 2; ++c)
-            if (kPadNotes[p][c] == note && k.pads[p].numChoices > 0)
+            if (kPadNotes[p][c] == note && note > 0 && k.pads[p].numChoices > 0)
             {
                 pad = p;
                 choice = c < k.pads[p].numChoices ? c : 0;

@@ -18,9 +18,9 @@
 namespace tbdm
 {
 
-const int kNumPads = 10;
-const int kAccentTrack = 10;            // track index of the accent row
-const int kNumTracks = 11;              // ten pads + accent
+const int kNumPads = 11;                // the 707's ten, plus a second mid tom (LM-1)
+const int kAccentTrack = kNumPads;      // track index of the accent row
+const int kNumTracks = kNumPads + 1;    // pads + accent
 const int kMaxSteps = 32;
 const int kNumPatterns = 16;
 const int kMaxSong = 64;

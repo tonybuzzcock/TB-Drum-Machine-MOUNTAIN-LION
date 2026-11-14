@@ -14,19 +14,20 @@ modern Mac version lives in `TB-Drum-Machine-2026-MAC`.
 4. **Kits ▸ Show Kits Folder** opens
    `~/Library/Application Support/TB/TB Drum Machine/Kits`. Drag the three sample
    folders in (**TB 707**, **TB CR78**, **TB LM1**, as supplied), then choose **Kits ▸ Reload Kits**.
-   The readout shows how many samples each kit loaded (707 23, CR-78 7, LM-1 10).
+   The readout shows how many samples each kit loaded (707 23, CR-78 7, LM-1 11 with Tom 4).
    A `Kits` folder next to the app works too.
 
 The samples aren't in this public repo; the app reads them from the Kits folder.
 
-## The pads (TR-707 layout)
+## The pads (TR-707 layout, plus a second mid tom)
 
 | Pad | 707 | CR-78 | LM-1 |
 |---|---|---|---|
 | Kick | BD A / BD B | Kick | Kick |
 | Snare | SD A / SD B (SD B has Flam A/B) | Snare | Snare 01 / Snare 02 |
 | Low Tom | Tom Lo (+ flams) | **Conga** | Tom 3 |
-| Mid Tom | Tom Mid (+ flams) | – | Tom 2 |
+| Mid Tom (1) | Tom Mid (+ flams) | – | Mid Tom 1: Tom 2 |
+| Mid Tom 2 | – | – | Mid Tom 2: Tom 4 |
 | Hi Tom | Tom Hi (+ flams) | **Bongo** | Tom 1 |
 | Rim / Cow | Rimshot / Cowbell | – | – |
 | Clap / Tamb | Clap / Tambourine | **Cabassa** | – |
@@ -39,11 +40,11 @@ Pad names come from the loaded kit. A kit can be chosen for each pattern.
 
 ## Pages
 
-- **PADS**: ten pads. A two-sound pad is split down the middle, left = A and right = B.
+- **PADS**: eleven pads. A two-sound pad is split down the middle, left = A and right = B.
   NORMAL / FLAM A / FLAM B buttons appear under pads that have flam samples.
   Option-click plays the hit accented. With **REC** on while playing, hits go into the
   pattern on the nearest step.
-- **STEPS**: an Accent row plus the ten pads, up to 32 steps.
+- **STEPS**: an Accent row plus the eleven pads, up to 32 steps.
   - The **A / B** switch on a row picks the sound that new steps get.
   - Each row has its own **length**, so tracks can run against each other (polymetric).
   - The red line marks the **pattern length** (LENGTH ◀ ▶), where the song moves on.
@@ -71,7 +72,7 @@ Knobs: drag up and down (hold Shift for fine changes), double-click to reset, or
 - **SYNC MIDI** follows MIDI clock plus Start / Stop / Continue from Pro Tools, Reaper or anything
   else on any MIDI input. The tempo box shows the incoming tempo.
 - **MIDI notes in** (any channel) play the pads, using General MIDI drum notes: 36/35 kick,
-  38/40 snare, 45/47/50 toms, 37 rim, 56 cowbell, 39 clap, 54 tamb, 42/46 hats, 49 crash, 51 ride
+  38/40 snare, 45/47/48/50 toms, 37 rim, 56 cowbell, 39 clap, 54 tamb, 42/46 hats, 49 crash, 51 ride
   (CR-78 conga 64, bongo 60, cabassa 69). Velocity 112 and up counts as accented.
 - **EXPORT WAV**: the song once through, or the current pattern 1–32 times, rendered
   offline as 24-bit stereo (44.1 or 48 kHz, following the audio device), with the last hits'
