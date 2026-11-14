@@ -53,14 +53,14 @@ static const KitDef kKits[kNumKits] = {
         { "KICK",        1, { "", "" },              { { "Kick LM1.wav", 0, 0 }, NOFILE }, { 36, 0 } },
         { "SNARE",       2, { "SN 01", "SN 02" },    { { "Snare 01 LM1.wav", 0, 0 }, { "Snare 02 LM1.wav", 0, 0 } }, { 38, 40 } },
         { "LOW TOM",     1, { "", "" },              { { "Tom 3 LM1.wav", 0, 0 }, NOFILE }, { 45, 0 } },
-        { "MID TOM 1",   1, { "", "" },              { { "Tom 2 LM1.wav", 0, 0 }, NOFILE }, { 47, 0 } },
+        { "MID TOM 1",   1, { "", "" },              { { "Mid Tom 1 LM1.wav", 0, 0 }, NOFILE }, { 48, 0 } },
         { "HI TOM",      1, { "", "" },              { { "Tom 1 LM1.wav", 0, 0 }, NOFILE }, { 50, 0 } },
         UNUSED,
         UNUSED,
         { "HI-HAT",      2, { "CLOSED", "OPEN" },    { { "Closed HiHat LM1.wav", 0, 0 }, { "Open HiHat LM1.wav", 0, 0 } }, { 42, 46 } },
         { "CRASH",       1, { "", "" },              { { "Crash LM1.wav", 0, 0 }, NOFILE }, { 49, 0 } },
         { "RIDE",        1, { "", "" },              { { "Ride LM1.wav", 0, 0 }, NOFILE }, { 51, 0 } },
-        { "MID TOM 2",   1, { "", "" },              { { "Tom 4 LM1.wav", 0, 0 }, NOFILE }, { 48, 0 } } } }
+        { "MID TOM 2",   1, { "", "" },              { { "Tom 2 LM1.wav", 0, 0 }, NOFILE }, { 47, 0 } } } }
 };
 
 #undef NOFILE
@@ -123,9 +123,13 @@ static bool tryLoad (const char* dir, const char* folder, const char* file, Samp
 {
     char path[2048];
     const char* folders[2] = { folder, folder + (std::strncmp (folder, "TB ", 3) == 0 ? 3 : 0) };
-    for (int i = 0; i < 2; ++i)
+    // the file as named, or with underscores for spaces (as some uploads arrive)
+    char alt[256];
+    std::snprintf (alt, sizeof (alt), "%s", file);
+    for (char* c = alt; *c; ++c) if (*c == ' ') *c = '_';
+    for (int i = 0; i < 4; ++i)
     {
-        std::snprintf (path, sizeof (path), "%s/%s/%s", dir, folders[i], file);
+        std::snprintf (path, sizeof (path), "%s/%s/%s", dir, folders[i & 1], i < 2 ? file : alt);
         float* d = 0;
         int n = 0;
         double r = 44100.0;

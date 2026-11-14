@@ -14,7 +14,7 @@ modern Mac version lives in `TB-Drum-Machine-2026-MAC`.
 4. **Kits ▸ Show Kits Folder** opens
    `~/Library/Application Support/TB/TB Drum Machine/Kits`. Drag the three sample
    folders in (**TB 707**, **TB CR78**, **TB LM1**, as supplied), then choose **Kits ▸ Reload Kits**.
-   The readout shows how many samples each kit loaded (707 23, CR-78 7, LM-1 11 with Tom 4).
+   The readout shows how many samples each kit loaded (707 23, CR-78 7, LM-1 11).
    A `Kits` folder next to the app works too.
 
 The samples aren't in this public repo; the app reads them from the Kits folder.
@@ -26,8 +26,8 @@ The samples aren't in this public repo; the app reads them from the Kits folder.
 | Kick | BD A / BD B | Kick | Kick |
 | Snare | SD A / SD B (SD B has Flam A/B) | Snare | Snare 01 / Snare 02 |
 | Low Tom | Tom Lo (+ flams) | **Conga** | Tom 3 |
-| Mid Tom (1) | Tom Mid (+ flams) | – | Mid Tom 1: Tom 2 |
-| Mid Tom 2 | – | – | Mid Tom 2: Tom 4 |
+| Mid Tom (1) | Tom Mid (+ flams) | – | Mid Tom 1 (the added sample) |
+| Mid Tom 2 | – | – | Tom 2 |
 | Hi Tom | Tom Hi (+ flams) | **Bongo** | Tom 1 |
 | Rim / Cow | Rimshot / Cowbell | – | – |
 | Clap / Tamb | Clap / Tambourine | **Cabassa** | – |

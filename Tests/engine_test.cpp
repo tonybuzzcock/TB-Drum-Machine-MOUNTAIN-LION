@@ -86,7 +86,8 @@ int main (int argc, char** argv)
         check (kb.samplesExpected (kKit707) == 23 && kb.samplesExpected (kKitCR78) == 7 && kb.samplesExpected (kKitLM1) == 11,
                "kit tables list 23 + 7 + 11 samples");
         check (std::strcmp (kitDef (kKitLM1).pads[3].label, "MID TOM 1") == 0 && std::strcmp (kitDef (kKitLM1).pads[10].label, "MID TOM 2") == 0
-               && std::strcmp (kitDef (kKitLM1).pads[10].file[0][0], "Tom 4 LM1.wav") == 0, "LM-1 has MID TOM 1 and MID TOM 2 (Tom 4)");
+               && std::strcmp (kitDef (kKitLM1).pads[3].file[0][0], "Mid Tom 1 LM1.wav") == 0
+               && std::strcmp (kitDef (kKitLM1).pads[10].file[0][0], "Tom 2 LM1.wav") == 0, "LM-1: MID TOM 1 = new sample, MID TOM 2 = Tom 2");
         check (! kb.padAvailable (kKit707, 10) && ! kb.padAvailable (kKitCR78, 10), "707 and CR-78 have no 11th pad");
         check (kb.flamAvailable (kKit707, 1, 1) && ! kb.flamAvailable (kKit707, 1, 0), "707 flams on SD B only");
         check (! kb.padAvailable (kKitCR78, 3) && kb.padAvailable (kKitCR78, 2), "CR-78 unused pads are empty");
@@ -504,9 +505,9 @@ int main (int argc, char** argv)
         KitBank rk;
         const int n = rk.load (real);
         char msg[128];
-        std::snprintf (msg, sizeof (msg), "loaded %d of 41 samples (707 %d, CR-78 %d, LM-1 %d; Tom 4 to come)", n,
+        std::snprintf (msg, sizeof (msg), "loaded %d of 41 samples (707 %d, CR-78 %d, LM-1 %d)", n,
                        rk.samplesLoaded (0), rk.samplesLoaded (1), rk.samplesLoaded (2));
-        check (n >= 40, msg);
+        check (n == 41, msg);
         if (! renders.empty())
         {
             for (int k = 0; k < kNumKits; ++k)
