@@ -641,23 +641,23 @@ static void loadKits (AppCore* c)
     [self shot: "steps_707"];
 
     // steps: kick (row 1) step 3 on, then off by painting
-    [self click: [view rectForStep: 2 row: 1]];
+    [self click: [view rectForStep: 2 row: [view rowForPad: 0]]];
     [self check: e.song().patterns[0].tracks[0].steps[2].on == 1 what: "click a step: on"];
-    [self drag: NSMakePoint (NSMidX ([view rectForStep: 1 row: 8]), NSMidY ([view rectForStep: 1 row: 8]))
-            to: NSMakePoint (NSMidX ([view rectForStep: 5 row: 8]), NSMidY ([view rectForStep: 5 row: 8]))];
+    [self drag: NSMakePoint (NSMidX ([view rectForStep: 1 row: [view rowForPad: 8]]), NSMidY ([view rectForStep: 1 row: [view rowForPad: 8]]))
+            to: NSMakePoint (NSMidX ([view rectForStep: 5 row: [view rowForPad: 8]]), NSMidY ([view rectForStep: 5 row: [view rowForPad: 8]]))];
     bool painted = true;
     for (int k = 1; k <= 5; ++k) painted = painted && e.song().patterns[0].tracks[8].steps[k].on;
     [self check: painted what: "drag paints steps 2-6 on the crash row"];
     [self click: [view rectForEditMode: 3]];
-    [self click: [view rectForStep: 2 row: 1]];
+    [self click: [view rectForStep: 2 row: [view rowForPad: 0]]];
     [self check: e.song().patterns[0].tracks[0].steps[2].sub == 2 what: "HITS mode: step split in 2"];
     [self click: [view rectForEditMode: 2]];
-    [self click: [view rectForStep: 4 row: 2]];       // snare step 5 is SD A in the demo: no flams
-    [self click: [view rectForStep: 12 row: 2]];      // step 13 is SD B
+    [self click: [view rectForStep: 4 row: [view rowForPad: 1]]];       // snare step 5 is SD A in the demo: no flams
+    [self click: [view rectForStep: 12 row: [view rowForPad: 1]]];      // step 13 is SD B
     [self check: e.song().patterns[0].tracks[1].steps[12].flam == 1 what: "FLAM mode: SD B step gets Flam A"];
     [self check: e.song().patterns[0].tracks[1].steps[4].flam == 0 what: "FLAM mode: SD A has no flams"];
     [self click: [view rectForEditMode: 1]];
-    [self click: [view rectForStep: 0 row: 1]];
+    [self click: [view rectForStep: 0 row: [view rowForPad: 0]]];
     [self check: e.song().patterns[0].tracks[0].steps[0].choice == 1 what: "A/B mode: kick step 1 becomes BD B"];
     [self click: [view rectForEditMode: 0]];
     [self shot: "steps_edited"];
@@ -674,6 +674,7 @@ static void loadKits (AppCore* c)
     [self shot: "steps_cr78"];
     [self click: [view rectForPatternSlot: 2]];
     [self check: e.currentPattern() == 2 what: "pattern slot 3 selected"];
+    [self check: [view rowForPad: 10] == 6 && [view rowForPad: 6] == 10 && [view rowForPad: 5] == 11 what: "LM-1: MID TOM 2 after MID TOM 1, unused pads last"];
     [self shot: "steps_lm1"];
     [self click: [view rectForPatternSlot: 0]];
     [self click: [view rectForKit: 0]];

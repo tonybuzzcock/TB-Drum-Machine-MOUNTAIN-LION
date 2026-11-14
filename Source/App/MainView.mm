@@ -44,18 +44,26 @@ inline NSRect modeRect (int i) { return NSMakeRect (770.0 + i * 98.0, kTabY, 90.
 
 // Every page shows the pads in the user's order: Kick, Snare, Hi-Hat, Hi Tom,
 // Mid Tom (1), Mid Tom 2, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
-// The CR-78 has its sounds first and its empty pads at the end: Kick, Snare,
-// Hi-Hat, Bongo, Conga, Cabassa, then the unused pads.
-const int kPadOrderKit[kNumKits][kNumPads] = {
-    { 0, 1, 7, 4, 3, 2, 8, 9, 6, 5, 10 },     // 707 (its unused Mid Tom 2 last)
-    { 0, 1, 7, 4, 2, 6, 3, 10, 8, 9, 5 },     // CR-78
-    { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 }      // LM-1
-};
-int gOrderKit = 0;     // kit of the pattern on show; set before drawing and hit-testing
-inline int padAt (int i) { return kPadOrderKit[gOrderKit < 0 || gOrderKit >= kNumKits ? 0 : gOrderKit][i]; }
+// Pad order on every page: Kick, Snare, Hi-Hat, Hi Tom, Mid Tom 1, Mid Tom 2,
+// Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow, with any pad the kit doesn't have
+// moved to the end (the user's rule: unused slots always last).
+const int kBaseOrder[kNumPads] = { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 };
+int gOrder[kNumPads] = { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 };   // for the kit on show
+void setOrderForKit (int kit)
+{
+    const KitDef& kd = kitDef (kit);
+    int n = 0;
+    for (int pass = 0; pass < 2; ++pass)
+        for (int i = 0; i < kNumPads; ++i)
+        {
+            const bool used = kd.pads[kBaseOrder[i]].numChoices > 0;
+            if (used == (pass == 0)) gOrder[n++] = kBaseOrder[i];
+        }
+}
+inline int padAt (int i) { return gOrder[i]; }
 inline int padPos (int pad)
 {
-    for (int i = 0; i < kNumPads; ++i) if (padAt (i) == pad) return i;
+    for (int i = 0; i < kNumPads; ++i) if (gOrder[i] == pad) return i;
     return pad;
 }
 
@@ -667,7 +675,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) syncOrder
 {
-    if (core) gOrderKit = core->engine.song().patterns[core->engine.currentPattern()].kit;
+    if (core) setOrderForKit (core->engine.song().patterns[core->engine.currentPattern()].kit);
 }
 
 - (BOOL) isFlipped { return YES; }
@@ -2167,5 +2175,6 @@ static std::string cleanName (const char* s)
 - (NSRect) rectForPlay { return faceToView (kPlayRect); }
 - (NSRect) rectForEditMode: (int) i { return faceToView (modeRect (i)); }
 - (NSRect) readoutRect { return faceToView (kReadout); }
+- (int) rowForPad: (int) pad { [self syncOrder]; return padPos (pad) + 1; }
 
 @end
