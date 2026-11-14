@@ -38,6 +38,7 @@ enum { kPagePads = 0, kPageSteps = 1, kPageMixer = 2, kPageSong = 3 };
 - (NSRect) rectForEditMode: (int) i;
 - (NSRect) readoutRect;
 - (int) rowForPad: (int) pad;
+- (void) setTimeSignature: (int) sig;
 - (NSTextField*) nameField;
 - (const char*) readoutText;
 @end

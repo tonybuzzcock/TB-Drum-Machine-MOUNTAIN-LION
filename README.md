@@ -47,6 +47,9 @@ Pad names come from the loaded kit. A kit can be chosen for each pattern.
 - **STEPS**: an Accent row plus the eleven pads, up to 32 steps.
   - The **A / B** switch on a row picks the sound that new steps get.
   - Each row has its own **length**, so tracks can run against each other (polymetric).
+  - **TIME** drop-down: 4/4 (16 steps), 3/4 (12), 6/4 (24), 6/8 (12, grouped in 6s) or 12/8 (24, grouped
+    in 6s). It sets the pattern and every track to that bar and lights only those steps. Tempo stays
+    in quarter-note BPM, and exported MIDI files carry the time signature.
   - The red line marks the **pattern length** (LENGTH ◀ ▶), where the song moves on.
   - **M / S** mute and solo the row.
   - Click mode: **STEP** turns steps on and off (drag to paint). **A / B** swaps a step's

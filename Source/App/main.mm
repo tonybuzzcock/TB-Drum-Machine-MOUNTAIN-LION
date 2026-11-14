@@ -662,6 +662,18 @@ static void loadKits (AppCore* c)
     [self click: [view rectForEditMode: 0]];
     [self shot: "steps_edited"];
 
+    // time signatures
+    [view setTimeSignature: tbdm::kSig68];
+    bool sigOk = e.song().patterns[0].length == 12;
+    for (int t = 0; t < kNumTracks; ++t) sigOk = sigOk && e.song().patterns[0].tracks[t].length == 12;
+    [self check: sigOk what: "6/8: pattern and every track 12 steps"];
+    [self shot: "steps_6_8"];
+    [view setTimeSignature: tbdm::kSig34];
+    [self check: e.song().patterns[0].length == 12 && e.song().patterns[0].sig == tbdm::kSig34 what: "3/4: 12 steps"];
+    [self shot: "steps_3_4"];
+    [view setTimeSignature: tbdm::kSig44];
+    [self check: e.song().patterns[0].length == 16 what: "back to 4/4: 16 steps"];
+
     // play a little to show the playhead
     e.lock(); e.play(); e.unlock();
     [self renderFor: 0.9];

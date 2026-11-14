@@ -70,7 +70,7 @@ bool saveSession (const char* path, const Song& s, const SessionState& st)
     for (int p = 0; p < kNumPatterns; ++p)
     {
         const Pattern& P = s.patterns[p];
-        std::fprintf (f, "pattern %d %d %d\n", p, P.kit, P.length);
+        std::fprintf (f, "pattern %d %d %d %d\n", p, P.kit, P.length, P.sig);
         std::fprintf (f, "name %s\n", P.name);
         for (int t = 0; t < kNumTracks; ++t)
         {
@@ -143,6 +143,9 @@ bool loadSession (const char* path, Song& out, SessionState& st)
             {
                 s.patterns[curP].kit = clampi (j, 0, kNumKits - 1);
                 s.patterns[curP].length = clampi (k, 1, kMaxSteps);
+                int sg = 0;
+                if (std::sscanf (line, "pattern %d %d %d %d", &i, &j, &k, &sg) == 4)
+                    s.patterns[curP].sig = clampi (sg, 0, kNumSigs - 1);
             }
         }
         else if (std::strncmp (line, "songname ", 9) == 0)
@@ -222,8 +225,9 @@ static int patternAt (const Song& s, const ExportRange& r, int n)
 struct MidiEv
 {
     long tick;
-    int order;      // note-offs before note-ons at the same tick
+    int order;      // time signatures first, then note-offs, then note-ons at the same tick
     unsigned char a, b, c;
+    int sig;        // >= 0: a time-signature meta event (a, b, c unused)
 };
 
 static bool evLess (const MidiEv& x, const MidiEv& y)
@@ -247,6 +251,7 @@ bool exportMidi (const char* path, const Song& s, const ExportRange& r)
     const int perStep = ppqn / 4;   // 16th notes
     std::vector<MidiEv> ev;
     long base = 0;
+    int lastSig = -1;
     const int plays = exportPatternCount (s, r);
     const double sw = clampf (s.swing, 0.0f, 0.5f);
     for (int n = 0; n < plays; ++n)
@@ -254,6 +259,12 @@ bool exportMidi (const char* path, const Song& s, const ExportRange& r)
         const Pattern& P = s.patterns[patternAt (s, r, n)];
         const int Lp = clampi (P.length, 1, kMaxSteps);
         const KitDef& kd = kitDef (P.kit);
+        if (P.sig != lastSig)
+        {
+            MidiEv ts = { base, 0, 0, 0, 0, clampi (P.sig, 0, kNumSigs - 1) };
+            ev.push_back (ts);
+            lastSig = P.sig;
+        }
         for (int k = 0; k < Lp; ++k)
         {
             const double st = stepStart (k, Lp, sw);
@@ -273,8 +284,8 @@ bool exportMidi (const char* path, const Song& s, const ExportRange& r)
                 {
                     const long tk = base + (long) std::floor ((st + dur * j / sub) * perStep + 0.5);
                     const long len = (long) (dur * perStep / sub * 0.5) < 1 ? 1 : (long) (dur * perStep / sub * 0.5);
-                    MidiEv on = { tk, 1, 0x99, (unsigned char) note, (unsigned char) (acc ? kVelAccent : kVelNormal) };
-                    MidiEv off = { tk + len, 0, 0x89, (unsigned char) note, 64 };
+                    MidiEv on = { tk, 2, 0x99, (unsigned char) note, (unsigned char) (acc ? kVelAccent : kVelNormal), -1 };
+                    MidiEv off = { tk + len, 1, 0x89, (unsigned char) note, 64, -1 };
                     ev.push_back (on);
                     ev.push_back (off);
                 }
@@ -289,8 +300,6 @@ bool exportMidi (const char* path, const Song& s, const ExportRange& r)
     const unsigned long uspq = (unsigned long) (60000000.0 / clampf (s.tempo, 30.0f, 300.0f) + 0.5);
     const unsigned char tempoEv[] = { 0x00, 0xFF, 0x51, 0x03, (unsigned char) (uspq >> 16), (unsigned char) (uspq >> 8), (unsigned char) uspq };
     trk.insert (trk.end(), tempoEv, tempoEv + sizeof (tempoEv));
-    const unsigned char sig[] = { 0x00, 0xFF, 0x58, 0x04, 0x04, 0x02, 0x18, 0x08 };
-    trk.insert (trk.end(), sig, sig + sizeof (sig));
     const char* nm = "TB Drum Machine";
     trk.push_back (0x00);
     trk.push_back (0xFF);
@@ -303,6 +312,14 @@ bool exportMidi (const char* path, const Song& s, const ExportRange& r)
     {
         putVar (trk, (unsigned long) (ev[i].tick - last));
         last = ev[i].tick;
+        if (ev[i].sig >= 0)
+        {
+            const SigDef& sd = sigDef (ev[i].sig);
+            const unsigned char m[] = { 0xFF, 0x58, 0x04, (unsigned char) sd.numer, (unsigned char) sd.denomPow2,
+                                        (unsigned char) (sd.denomPow2 == 3 ? 36 : 24), 0x08 };
+            trk.insert (trk.end(), m, m + sizeof (m));
+            continue;
+        }
         trk.push_back (ev[i].a);
         trk.push_back (ev[i].b);
         trk.push_back (ev[i].c);

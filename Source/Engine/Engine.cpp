@@ -213,11 +213,26 @@ void KitBank::setSample (int kit, int pad, int choice, int flam, float* d, int f
 //==============================================================================
 // Patterns and song
 
+static const SigDef kSigs[kNumSigs] = {
+    { "4/4", 16, 4, 4, 2 },
+    { "3/4", 12, 4, 3, 2 },
+    { "6/4", 24, 4, 6, 2 },
+    { "6/8", 12, 6, 6, 3 },
+    { "12/8", 24, 6, 12, 3 }
+};
+
+const SigDef& sigDef (int sig)
+{
+    if (sig < 0 || sig >= kNumSigs) sig = 0;
+    return kSigs[sig];
+}
+
 void Pattern::clear()
 {
     std::memset (name, 0, sizeof (name));
     kit = kKit707;
     length = 16;
+    sig = kSig44;
     for (int t = 0; t < kNumTracks; ++t)
     {
         tracks[t].length = 16;

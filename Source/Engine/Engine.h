@@ -30,6 +30,11 @@ const int kNumFlams = 3;                // normal, Flam A, Flam B
 
 enum { kKit707 = 0, kKitCR78 = 1, kKitLM1 = 2 };
 
+// Time signatures, in 16th-note steps (tempo is always quarter-note BPM)
+enum { kSig44 = 0, kSig34, kSig64, kSig68, kSig128, kNumSigs };
+struct SigDef { const char* name; int steps; int group; int numer; int denomPow2; };
+const SigDef& sigDef (int sig);
+
 //------------------------------------------------------------------------------
 // Kits
 
@@ -104,6 +109,7 @@ struct Pattern
     char name[kNameLen];
     int kit;
     int length;             // pattern length in steps (1..32): where the song moves on
+    int sig;                // time signature (kSig44...): bar length and how the grid groups
     Track tracks[kNumTracks];
     void clear();
     bool isEmpty() const;

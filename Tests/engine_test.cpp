@@ -301,6 +301,7 @@ int main (int argc, char** argv)
         std::strcpy (s.name, "Saturday Night Song");
         s.patterns[5].kit = kKitLM1;
         s.patterns[5].length = 24;
+        s.patterns[5].sig = kSig128;
         s.patterns[5].tracks[2].length = 7;
         setStep (s.patterns[5], 2, 6, 1, 2, 3);
         setStep (s.patterns[5], kAccentTrack, 0);
@@ -398,6 +399,36 @@ int main (int argc, char** argv)
         check (ons == 6 && onTicks[3] == 384, "second bar starts at 384 ticks");
         check (tick == 768, "file ends at the end of bar 2");
         std::remove (path);
+    }
+
+    std::printf ("Time signatures\n");
+    {
+        check (sigDef (kSig44).steps == 16 && sigDef (kSig34).steps == 12 && sigDef (kSig64).steps == 24
+               && sigDef (kSig68).steps == 12 && sigDef (kSig128).steps == 24, "4/4 16, 3/4 12, 6/4 24, 6/8 12, 12/8 24 steps");
+        Song s;
+        s.setDefaults();
+        s.patterns[0].sig = kSig68;
+        s.patterns[0].length = 12;
+        setStep (s.patterns[0], 0, 0);
+        ExportRange r = { false, 0, 2 };
+        check (exportMidi ("/tmp/tbdm_sig.mid", s, r), "6/8 pattern exports");
+        FILE* f = std::fopen ("/tmp/tbdm_sig.mid", "rb");
+        unsigned char buf[512];
+        const size_t n = std::fread (buf, 1, sizeof (buf), f);
+        std::fclose (f);
+        bool found = false;
+        for (size_t i = 0; i + 6 < n; ++i)
+            if (buf[i] == 0xFF && buf[i + 1] == 0x58 && buf[i + 2] == 4 && buf[i + 3] == 6 && buf[i + 4] == 3) found = true;
+        check (found, "MIDI file says 6/8");
+        Engine e (&kb);
+        e.setSampleRate (fs);
+        e.song() = s;
+        Engine::HitLog lg[8];
+        e.setHitLog (lg, 8);
+        e.play();
+        runFor (e, 12 * stepSamples / fs + 0.01);
+        check (e.hitLogCount() == 2 && near (lg[1].sampleTime, 12 * stepSamples, 1.0), "a 6/8 bar is 12 sixteenths long");
+        std::remove ("/tmp/tbdm_sig.mid");
     }
 
     std::printf ("WAV export\n");

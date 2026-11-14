@@ -39,7 +39,8 @@ const CGFloat kTopKnobX[4] = { 254.0, 440.0, 530.0, 620.0 };   // tempo, swing, 
 
 inline NSRect kitRect (int i) { return NSMakeRect (840.0 + i * 108.0, 26.0, 100.0, 40.0); }
 inline NSRect tabRect (int i) { return NSMakeRect (20.0 + i * 122.0, kTabY, 116.0, kTabH); }
-const NSRect kLengthRect = { { 560.0, 114.0 }, { 180.0, 32.0 } };
+const NSRect kTimeRect = { { 520.0, 114.0 }, { 118.0, 32.0 } };     // time signature drop-down
+const NSRect kLengthRect = { { 646.0, 114.0 }, { 116.0, 32.0 } };
 inline NSRect modeRect (int i) { return NSMakeRect (770.0 + i * 98.0, kTabY, 90.0, kTabH); }
 
 // Every page shows the pads in the user's order: Kick, Snare, Hi-Hat, Hi Tom,
@@ -70,7 +71,8 @@ inline int padPos (int pad)
 // Steps page
 const CGFloat kRowY0 = 184.0, kRowPitch = 36.0, kCellH = 28.0;
 const CGFloat kGridX0 = 356.0, kStepPitch = 24.0, kCellW = 21.0;
-inline CGFloat cellX (int k) { return kGridX0 + k * kStepPitch + (k / 4) * 3.0; }
+int gGroup = 4;      // steps per beat in the pattern on show (4, or 6 for 6/8 and 12/8)
+inline CGFloat cellX (int k) { return kGridX0 + k * kStepPitch + (k / gGroup) * 3.0; }
 inline NSRect cellRect (int row, int k) { return NSMakeRect (cellX (k), kRowY0 + row * kRowPitch + 4.0, kCellW, kCellH); }
 inline NSRect rowChoiceRect (int row) { return NSMakeRect (140.0, kRowY0 + row * kRowPitch + 6.0, 94.0, 24.0); }
 inline NSRect rowLenRect (int row) { return NSMakeRect (240.0, kRowY0 + row * kRowPitch + 6.0, 58.0, 24.0); }
@@ -675,7 +677,10 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) syncOrder
 {
-    if (core) setOrderForKit (core->engine.song().patterns[core->engine.currentPattern()].kit);
+    if (! core) return;
+    const tbdm::Pattern& P = core->engine.song().patterns[core->engine.currentPattern()];
+    setOrderForKit (P.kit);
+    gGroup = sigDef (P.sig).group;
 }
 
 - (BOOL) isFlipped { return YES; }
@@ -1002,6 +1007,19 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         char t[32];
         std::snprintf (t, sizeof (t), "LENGTH  %d", P.length);
         drawStepper (kLengthRect, t);
+        // time signature drop-down
+        std::snprintf (t, sizeof (t), "TIME  %s", sigDef (P.sig).name);
+        drawButton (NSMakeRect (kTimeRect.origin.x, kTimeRect.origin.y, kTimeRect.size.width - 20.0, kTimeRect.size.height), "", false, kRed);
+        drawButton (kTimeRect, "", false, kRed);
+        drawText (t, boldFont (12.0), [NSColor blackColor], kTimeRect.origin.x + 10.0, NSMidY (kTimeRect), 0.0);
+        NSBezierPath* tri = [NSBezierPath bezierPath];
+        const CGFloat tx = NSMaxX (kTimeRect) - 14.0, ty = NSMidY (kTimeRect);
+        [tri moveToPoint: NSMakePoint (tx - 5.0, ty - 3.0)];
+        [tri lineToPoint: NSMakePoint (tx + 5.0, ty - 3.0)];
+        [tri lineToPoint: NSMakePoint (tx, ty + 4.0)];
+        [tri closePath];
+        [[NSColor blackColor] set];
+        [tri fill];
         for (int i = 0; i < 4; ++i) drawButton (modeRect (i), kModeNames[i], editMode == i, kAmber, 12.0);
     }
     else if (page == kPagePads)
@@ -1022,7 +1040,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     {
         char n[4];
         std::snprintf (n, sizeof (n), "%d", k + 1);
-        const bool beat = (k % 4) == 0;
+        const bool beat = (k % gGroup) == 0;
         drawText (n, beat ? boldFont (9.5) : plainFont (9.0), k < P.length ? ink : rgb (130, 132, 136), cellX (k) + kCellW * 0.5, 174.0);
     }
     const int ps = e.playStep();
@@ -1074,8 +1092,8 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
             }
             else if (inTrack)
             {
-                NSGradient* g = [[[NSGradient alloc] initWithStartingColor: ((k / 4) & 1) ? rgb (212, 208, 198) : rgb (234, 230, 220)
-                                                                endingColor: ((k / 4) & 1) ? rgb (168, 164, 156) : rgb (190, 186, 177)] autorelease];
+                NSGradient* g = [[[NSGradient alloc] initWithStartingColor: ((k / gGroup) & 1) ? rgb (212, 208, 198) : rgb (234, 230, 220)
+                                                                endingColor: ((k / gGroup) & 1) ? rgb (168, 164, 156) : rgb (190, 186, 177)] autorelease];
                 [g drawInBezierPath: p angle: -90.0];
             }
             else
@@ -1539,6 +1557,26 @@ static std::string cleanName (const char* s)
     e.unlock();
     char t[64];
     std::snprintf (t, sizeof (t), "PATTERN %d   %s KIT", e.currentPattern() + 1, kitDef (k).name);
+    [self setReadout: t];
+    [self touched];
+}
+
+- (void) timeSigChosen: (NSMenuItem*) item { [self setTimeSignature: (int) [item tag]]; }
+
+// A time signature sets the bar: the pattern and every track take its length,
+// and the grid groups by its beats; only those steps stay lit.
+- (void) setTimeSignature: (int) sig
+{
+    if (! core || sig < 0 || sig >= kNumSigs) return;
+    tbdm::Engine& e = core->engine;
+    e.lock();
+    tbdm::Pattern& P = e.song().patterns[e.currentPattern()];
+    P.sig = sig;
+    P.length = sigDef (sig).steps;
+    for (int t = 0; t < kNumTracks; ++t) P.tracks[t].length = P.length;
+    e.unlock();
+    char t[64];
+    std::snprintf (t, sizeof (t), "TIME SIGNATURE   %s   %d STEPS", sigDef (sig).name, sigDef (sig).steps);
     [self setReadout: t];
     [self touched];
 }
@@ -2021,6 +2059,22 @@ static std::string cleanName (const char* s)
 
     if (page == kPageSteps)
     {
+        if (inRect (p, kTimeRect))
+        {
+            NSMenu* m = [[[NSMenu alloc] initWithTitle: @"Time signature"] autorelease];
+            const int cur = e.song().patterns[e.currentPattern()].sig;
+            for (int i = 0; i < kNumSigs; ++i)
+            {
+                NSString* title = [NSString stringWithFormat: @"%s   (%d steps)", sigDef (i).name, sigDef (i).steps];
+                NSMenuItem* it = [[[NSMenuItem alloc] initWithTitle: title action: @selector (timeSigChosen:) keyEquivalent: @""] autorelease];
+                [it setTarget: self];
+                [it setTag: i];
+                [it setState: i == cur ? NSOnState : NSOffState];
+                [m addItem: it];
+            }
+            [m popUpMenuPositioningItem: [m itemAtIndex: cur] atLocation: NSMakePoint (kTimeRect.origin.x + F, NSMaxY (kTimeRect) + F - 4.0) inView: self];
+            return;
+        }
         if (stepperSide (kLengthRect, p))
         {
             e.lock();
