@@ -31,7 +31,7 @@ xcrun clang++ -arch x86_64 -mmacosx-version-min=$MIN_OS \
     -std=c++98 -stdlib=libc++ -O2 -Wall -Wextra -Wno-deprecated-declarations \
     -fno-objc-arc -Werror=unguarded-availability -Werror=unguarded-availability-new \
     -framework Cocoa -framework AudioUnit -framework AudioToolbox -framework CoreAudio -framework CoreMIDI \
-    Source/Engine/Engine.cpp Source/Engine/Wav.cpp Source/Engine/Export.cpp \
+    Source/Engine/Engine.cpp Source/Engine/Wav.cpp Source/Engine/Export.cpp Source/Engine/Master.cpp \
     Source/App/MainView.mm Source/App/main.mm \
     -o "$BUNDLE/Contents/MacOS/$EXE"
 

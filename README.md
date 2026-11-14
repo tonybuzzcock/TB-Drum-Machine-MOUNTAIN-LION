@@ -70,6 +70,20 @@ CLEAR needs a second click.
 
 Knobs: drag up and down (hold Shift for fine changes), double-click to reset, or use the scroll wheel.
 
+## M-50 Master sidecar
+
+A second mahogany-framed unit bolted on the right, in the TB M50 Dual Channel Strip's look and
+sound, on the drum machine's stereo output:
+- **L / R VUs** at the top: 0 VU = a -18 dBFS rms sine, with 300 ms VU ballistics.
+- **EQUALIZER**: HIGH 2.5–15 kHz, MID 500 Hz–5 kHz, LOW 50 Hz–1 kHz, ±15 dB, Q 0.9 (the M-50's).
+  The orange ring sets the frequency and the dark cap boost/cut. **EQ BYPASS** lights red when the
+  EQ is out.
+- **STEREO MASTER** fader, M-50 law: 7.5 = 0 dB, 10 = +8 dB, 5 = -10 dB.
+
+The exported stereo mix goes through the sidecar. The separate mono tracks stay dry, for mixing in
+the DAW. Settings are saved with the session. The top bar's MASTER knob sets the drum machine's
+level going into the sidecar.
+
 ## Sync, MIDI in, exports
 
 - **SYNC MIDI** follows MIDI clock plus Start / Stop / Continue from Pro Tools, Reaper or anything

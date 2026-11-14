@@ -14,6 +14,7 @@
 #define TBDM_ENGINE_H
 
 #include <pthread.h>
+#include "Master.h"
 
 namespace tbdm
 {
@@ -142,6 +143,11 @@ struct Song
     float accent;           // 0..1 accent amount
     float master;           // 0..1 master volume
     char name[kNameLen];    // song name for exports (up to 40 characters)
+    // the M-50 Master sidecar (MasterSection bands: 0 LOW, 1 MID, 2 HIGH)
+    float eqFreq[3];        // 0..1 over each band's sweep
+    float eqGain[3];        // 0..1, 0.5 = flat (+-15 dB)
+    bool eqBypass;
+    float fader;            // STEREO MASTER, 0..1 = marks 0..10 (0.75 = 0 dB)
     void setDefaults();
 };
 
@@ -209,6 +215,7 @@ public:
     int playStep() const { return playing ? lastStep : -1; }
     int trackStep (int track) const;
     // 0..1 flash per pad, decays after a hit
+    float vuDb (int ch) const { return master.vuDb (ch); }
     float padFlash (int pad) const { return (pad >= 0 && pad < kNumPads) ? flash[pad] : 0.0f; }
     int padFlashChoice (int pad) const { return (pad >= 0 && pad < kNumPads) ? flashChoice[pad] : 0; }
 
@@ -251,6 +258,7 @@ private:
     int lastStep;
     int stopAfter, patternEnds;
     int onlyPad;
+    MasterSection master;
     bool seqFinished;
 
     bool extSync, extRunning;

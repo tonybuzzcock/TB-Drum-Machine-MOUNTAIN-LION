@@ -274,6 +274,9 @@ void Song::setDefaults()
     accent = 0.5f;
     master = 0.8f;
     std::memset (name, 0, sizeof (name));
+    for (int b = 0; b < 3; ++b) { eqFreq[b] = 0.5f; eqGain[b] = 0.5f; }
+    eqBypass = false;
+    fader = 0.75f;
 }
 
 double stepStart (int k, int L, double swing)
@@ -308,7 +311,7 @@ Engine::Engine (const KitBank* k)
 
 Engine::~Engine() { pthread_mutex_destroy (&mtx); }
 
-void Engine::setSampleRate (double sr) { fs = (sr > 1000.0 && sr < 1.0e6) ? sr : 44100.0; }
+void Engine::setSampleRate (double sr) { fs = (sr > 1000.0 && sr < 1.0e6) ? sr : 44100.0; master.setSampleRate (fs); master.reset(); }
 
 void Engine::play()
 {
@@ -700,6 +703,9 @@ void Engine::render (float* L, float* R, int n)
         numPend[pad] = keep;
         flash[pad] *= (float) std::exp (-n / (0.15 * fs));
     }
+
+    // The M-50 Master sidecar: EQ, STEREO MASTER fader, VUs (not on single-pad renders)
+    if (onlyPad < 0) master.process (L, R, n, data);
 
     // Gentle limiter above -2 dB so loud kits never wrap round
     for (int i = 0; i < n; ++i)

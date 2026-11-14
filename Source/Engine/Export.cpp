@@ -59,6 +59,8 @@ bool saveSession (const char* path, const Song& s, const SessionState& st)
     std::fprintf (f, "TB Drum Machine 2\n");
     std::fprintf (f, "tempo %.3f\nswing %.4f\naccent %.4f\nmaster %.4f\n", s.tempo, s.swing, s.accent, s.master);
     std::fprintf (f, "songname %s\n", s.name);
+    std::fprintf (f, "sidecar %.4f %.4f %.4f %.4f %.4f %.4f %d %.4f\n", s.eqFreq[0], s.eqFreq[1], s.eqFreq[2],
+                  s.eqGain[0], s.eqGain[1], s.eqGain[2], s.eqBypass ? 1 : 0, s.fader);
     std::fprintf (f, "current %d\nsongmode %d\nsync %d\npage %d\n", st.currentPattern, st.songMode ? 1 : 0,
                   st.externalSync ? 1 : 0, st.page);
     for (int c = 0; c < kNumPads; ++c)
@@ -121,6 +123,18 @@ bool loadSession (const char* path, Song& out, SessionState& st)
         else if (std::sscanf (line, "swing %f", &a) == 1) s.swing = clampf (a, 0.0f, 0.5f);
         else if (std::sscanf (line, "accent %f", &a) == 1) s.accent = clampf (a, 0.0f, 1.0f);
         else if (std::sscanf (line, "master %f", &a) == 1) s.master = clampf (a, 0.0f, 1.0f);
+        else if (std::strncmp (line, "sidecar ", 8) == 0)
+        {
+            float f0, f1, f2, g0, g1, g2, fd;
+            int bp;
+            if (std::sscanf (line, "sidecar %f %f %f %f %f %f %d %f", &f0, &f1, &f2, &g0, &g1, &g2, &bp, &fd) == 8)
+            {
+                s.eqFreq[0] = clampf (f0, 0.0f, 1.0f); s.eqFreq[1] = clampf (f1, 0.0f, 1.0f); s.eqFreq[2] = clampf (f2, 0.0f, 1.0f);
+                s.eqGain[0] = clampf (g0, 0.0f, 1.0f); s.eqGain[1] = clampf (g1, 0.0f, 1.0f); s.eqGain[2] = clampf (g2, 0.0f, 1.0f);
+                s.eqBypass = bp != 0;
+                s.fader = clampf (fd, 0.0f, 1.0f);
+            }
+        }
         else if (std::sscanf (line, "current %d", &i) == 1) ss.currentPattern = clampi (i, 0, kNumPatterns - 1);
         else if (std::sscanf (line, "songmode %d", &i) == 1) ss.songMode = i != 0;
         else if (std::sscanf (line, "sync %d", &i) == 1) ss.externalSync = i != 0;

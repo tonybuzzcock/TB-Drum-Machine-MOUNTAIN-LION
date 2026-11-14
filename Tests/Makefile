@@ -1,7 +1,7 @@
 # Engine tests (Linux or Mac):  make -C Tests run
 CXX ?= g++
 CXXFLAGS = -std=c++98 -O2 -Wall -Wextra
-SRC = ../Source/Engine/Engine.cpp ../Source/Engine/Wav.cpp ../Source/Engine/Export.cpp
+SRC = ../Source/Engine/Engine.cpp ../Source/Engine/Wav.cpp ../Source/Engine/Export.cpp ../Source/Engine/Master.cpp
 
 engine_test: engine_test.cpp $(SRC) ../Source/Engine/*.h
 	$(CXX) $(CXXFLAGS) engine_test.cpp $(SRC) -o $@

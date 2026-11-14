@@ -8,6 +8,7 @@
 #include "../Source/Engine/Engine.h"
 #include "../Source/Engine/Export.h"
 #include "../Source/Engine/Wav.h"
+#include "../Source/Engine/Master.h"
 
 #include <cmath>
 #include <cstdio>
@@ -429,6 +430,59 @@ int main (int argc, char** argv)
         runFor (e, 12 * stepSamples / fs + 0.01);
         check (e.hitLogCount() == 2 && near (lg[1].sampleTime, 12 * stepSamples, 1.0), "a 6/8 bar is 12 sixteenths long");
         std::remove ("/tmp/tbdm_sig.mid");
+    }
+
+    std::printf ("M-50 Master sidecar\n");
+    {
+        // a steady sine through the section: gain at a frequency, after it settles
+        struct Probe
+        {
+            static double gainDb (Song& s, double freq, double level = 0.1)
+            {
+                MasterSection m;
+                m.setSampleRate (48000.0);
+                m.reset();
+                const int n = 48000;
+                std::vector<float> L (n), R (n);
+                for (int i = 0; i < n; ++i) L[i] = R[i] = (float) (level * std::sin (2.0 * M_PI * freq * i / 48000.0));
+                for (int b = 0; b < n; b += 256) m.process (&L[b], &R[b], std::min (256, n - b), s);
+                double pk = 0.0;
+                for (int i = n / 2; i < n; ++i) pk = std::max (pk, (double) std::fabs (L[i]));
+                return 20.0 * std::log10 (pk / level);
+            }
+        };
+        Song s;
+        s.setDefaults();
+        check (std::fabs (Probe::gainDb (s, 1000.0)) < 0.05, "flat EQ, fader 7.5: unity");
+        s.eqGain[MasterSection::kHigh] = 1.0f;
+        s.eqFreq[MasterSection::kHigh] = 0.5f;
+        const double fc = MasterSection::eqHz (MasterSection::kHigh, 0.5);
+        const double up = Probe::gainDb (s, fc);
+        char msg[96];
+        std::snprintf (msg, sizeof (msg), "HIGH +15 dB at %.0f Hz (measured %+.1f dB)", fc, up);
+        check (std::fabs (up - 15.0) < 0.5, msg);
+        check (std::fabs (Probe::gainDb (s, 100.0)) < 0.5, "...and leaves the lows alone");
+        s.eqBypass = true;
+        check (std::fabs (Probe::gainDb (s, fc)) < 0.05, "EQ BYPASS: flat again");
+        s.eqBypass = false;
+        s.eqGain[MasterSection::kHigh] = 0.5f;
+        s.eqGain[MasterSection::kLow] = 0.0f;
+        check (std::fabs (Probe::gainDb (s, MasterSection::eqHz (MasterSection::kLow, s.eqFreq[0])) + 15.0) < 0.5, "LOW -15 dB");
+        s.eqGain[MasterSection::kLow] = 0.5f;
+        s.fader = 1.0f;
+        check (std::fabs (Probe::gainDb (s, 1000.0) - 8.0) < 0.1, "fader at 10: +8 dB");
+        s.fader = 0.5f;
+        check (std::fabs (Probe::gainDb (s, 1000.0) + 10.0) < 0.1, "fader at 5: -10 dB");
+        s.fader = 0.75f;
+        MasterSection m;
+        m.setSampleRate (48000.0);
+        m.reset();
+        std::vector<float> L (48000), R (48000);
+        const double amp = 0.125892541 * std::sqrt (2.0);     // -18 dBFS rms
+        for (int i = 0; i < 48000; ++i) { L[i] = (float) (amp * std::sin (2.0 * M_PI * 1000.0 * i / 48000.0)); R[i] = L[i] * 0.5f; }
+        m.process (&L[0], &R[0], 48000, s);
+        std::snprintf (msg, sizeof (msg), "VU: -18 dBFS rms reads 0 VU (L %.2f), half level reads -6 (R %.2f)", m.vuDb (0), m.vuDb (1));
+        check (std::fabs (m.vuDb (0)) < 0.2 && std::fabs (m.vuDb (1) + 6.0) < 0.2, msg);
     }
 
     std::printf ("WAV export\n");

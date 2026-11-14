@@ -736,6 +736,32 @@ static void loadKits (AppCore* c)
     e.lock(); e.stop(); e.setSongMode (false); e.unlock();
     [self click: [view rectForPatternSlot: 0]];
 
+    // the M-50 Master sidecar
+    [self click: [view rectForPatternSlot: 0]];
+    const NSPoint hiCap = [view sidePoint: 3];
+    [self drag: hiCap to: NSMakePoint (hiCap.x, hiCap.y - 60.0)];
+    [self check: e.song().eqGain[2] > 0.7f what: "sidecar: HIGH boost/cut cap drag"];
+    const NSPoint loRing = [view sidePoint: 4];
+    [self drag: loRing to: NSMakePoint (loRing.x, loRing.y - 50.0)];
+    [self check: e.song().eqFreq[0] > 0.7f && std::fabs (e.song().eqGain[0] - 0.5f) < 0.001f what: "sidecar: LOW frequency ring drag (gain untouched)"];
+    const NSPoint fd = [view sidePoint: 7];
+    [self drag: fd to: NSMakePoint (fd.x, fd.y - 20.0)];
+    [self check: e.song().fader > 0.85f what: "sidecar: STEREO MASTER fader up"];
+    e.lock(); e.play(); e.unlock();
+    [self renderFor: 1.5];
+    [self check: e.vuDb (0) > -40.0f what: "sidecar: VUs move while playing"];
+    [self shot: "sidecar"];
+    [self clickAt: [view sidePoint: 0] flags: 0];
+    [self check: e.song().eqBypass what: "sidecar: EQ BYPASS on"];
+    [self renderFor: 0.2];
+    [self shot: "sidecar_bypassed"];
+    e.lock(); e.stop(); e.unlock();
+    [self clickAt: [view sidePoint: 0] flags: 0];
+    e.lock();
+    for (int b = 0; b < 3; ++b) { e.song().eqFreq[b] = 0.5f; e.song().eqGain[b] = 0.5f; }
+    e.song().fader = 0.75f;
+    e.unlock();
+
     // naming a pattern
     [self click: [view rectForTab: kPageSteps]];
     [view startNamingPattern];

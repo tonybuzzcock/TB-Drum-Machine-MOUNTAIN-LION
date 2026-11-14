@@ -13,7 +13,7 @@ permissions:
 env:
   APP_NAME: TB Drum Machine
   APP_ZIP: TB-Drum-Machine-mountain-lion-app.zip
-  ENGINE_SRC: Source/Engine/Engine.cpp Source/Engine/Wav.cpp Source/Engine/Export.cpp
+  ENGINE_SRC: Source/Engine/Engine.cpp Source/Engine/Wav.cpp Source/Engine/Export.cpp Source/Engine/Master.cpp
 
 jobs:
   linux-tests:

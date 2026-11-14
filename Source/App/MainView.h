@@ -8,7 +8,10 @@ struct AppCore;
 const CGFloat kPanelFrame = 24.0;
 const CGFloat kFaceWidth = 1180.0;
 const CGFloat kFaceHeight = 780.0;
-const CGFloat kViewWidth = kFaceWidth + 2 * kPanelFrame;
+const CGFloat kMainWidth = kFaceWidth + 2 * kPanelFrame;      // the drum machine in its frame
+const CGFloat kSideFaceWidth = 216.0;                            // the M-50 Master sidecar's face
+const CGFloat kSideX = kMainWidth;                               // where the sidecar's frame starts
+const CGFloat kViewWidth = kMainWidth + kSideFaceWidth + 2 * kPanelFrame;
 const CGFloat kViewHeight = kFaceHeight + 2 * kPanelFrame;
 
 enum { kPagePads = 0, kPageSteps = 1, kPageMixer = 2, kPageSong = 3 };
@@ -39,6 +42,7 @@ enum { kPagePads = 0, kPageSteps = 1, kPageMixer = 2, kPageSong = 3 };
 - (NSRect) readoutRect;
 - (int) rowForPad: (int) pad;
 - (void) setTimeSignature: (int) sig;
+- (NSPoint) sidePoint: (int) which;   // 0 EQ BYPASS, 1-3 gain caps LOW/MID/HIGH, 4-6 freq rings, 7 fader cap
 - (NSTextField*) nameField;
 - (const char*) readoutText;
 @end

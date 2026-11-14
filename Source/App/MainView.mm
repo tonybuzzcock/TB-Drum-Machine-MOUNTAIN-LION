@@ -125,10 +125,25 @@ const NSRect kReadout = { { 170.0, 708.0 }, { 640.0, 52.0 } };
 const NSRect kExportWav = { { 826.0, 708.0 }, { 160.0, 52.0 } };
 const NSRect kExportMidi = { { 996.0, 708.0 }, { 160.0, 52.0 } };
 
+// M-50 Master sidecar (its own face coordinates, 216 wide)
+const CGFloat kSW = kSideFaceWidth, kSCx = 108.0;
+const NSRect kVuRect[2] = { { { 14.0, 30.0 }, { 88.0, 60.0 } }, { { 114.0, 30.0 }, { 88.0, 60.0 } } };
+const NSRect kBypassRect = { { 92.0, 150.0 }, { 32.0, 22.0 } };
+const CGFloat kRingR = 31.0, kCapR = 18.0;
+inline CGFloat bandY (int b) { return 418.0 - 90.0 * b; }        // LOW 418, MID 328, HIGH 238
+const CGFloat kSFaderTop = 494.0, kSFaderBot = 600.0;
+inline CGFloat sFaderY (float v) { return kSFaderBot - (kSFaderBot - kSFaderTop) * v; }
+inline NSPoint viewToSide (NSPoint vp) { return NSMakePoint (vp.x - kSideX - kPanelFrame, vp.y - kPanelFrame); }
+inline NSPoint sideToView (NSPoint sp) { return NSMakePoint (sp.x + kSideX + kPanelFrame, sp.y + kPanelFrame); }
+const char* const kBandName[3] = { "LOW", "MID", "HIGH" };
+const char* const kBandLo[3] = { "50", "500", "2.5K" };
+const char* const kBandHi[3] = { "1K", "5K", "15K" };
+
 enum { kModeStep = 0, kModeChoice, kModeFlam, kModeHits };
 
 // Knob ids
-enum { kKTempo = 0, kKSwing = 1, kKAccent = 2, kKMaster = 3, kKTune = 16, kKDecay = 32, kKPan = 48, kKLevel = 64 };
+enum { kKTempo = 0, kKSwing = 1, kKAccent = 2, kKMaster = 3, kKTune = 16, kKDecay = 32, kKPan = 48, kKLevel = 64,
+       kKEqFreq = 80, kKEqGain = 84, kKFader = 88 };
 
 //------------------------------------------------------------------------------
 // Drawing helpers
@@ -418,9 +433,13 @@ void drawMahoganyBoard (NSRect r, bool vertical, unsigned seed)
 }
 
 // Four boards mitred at the corners, lacquered, a dark bevel where they meet the face
-void drawMahoganyFrame()
+void drawMahoganyFrame (CGFloat ox, CGFloat VW)
 {
-    const CGFloat VW = kViewWidth, VH = kViewHeight;
+    const CGFloat VH = kViewHeight;
+    [NSGraphicsContext saveGraphicsState];
+    NSAffineTransform* ft = [NSAffineTransform transform];
+    [ft translateXBy: ox yBy: 0.0];
+    [ft concat];
     for (int side = 0; side < 4; ++side)
     {
         NSBezierPath* clip = [NSBezierPath bezierPath];
@@ -468,6 +487,7 @@ void drawMahoganyFrame()
     NSFrameRectWithWidth (NSMakeRect (F - 2, F - 2, VW - 2 * F + 4, VH - 2 * F + 4), 2.0);
     [rgba (0, 0, 0, 0.85) set];
     NSFrameRectWithWidth (NSMakeRect (0, 0, VW, VH), 1.0);
+    [NSGraphicsContext restoreGraphicsState];
 }
 
 // Heavy wide lettering like the M-50's own model name (Arial Black stretched
@@ -496,6 +516,132 @@ void drawModelName (const char* text, CGFloat cx, CGFloat cy, CGFloat size)
     [t concat];
     [s drawAtPoint: NSMakePoint (-sz.width * 0.5, -sz.height * 0.5) withAttributes: at];
     [NSGraphicsContext restoreGraphicsState];
+}
+
+// The M-50's EQ control: an orange FREQUENCY ring with a white line, and a dark
+// BOOST / CUT cap in the middle with its own line
+void drawConcentric (NSPoint c, CGFloat rr, CGFloat fv, CGFloat rc, CGFloat gv)
+{
+    const CGFloat fa = valueAngle (fv), ga = valueAngle (gv);
+    NSBezierPath* ring = [NSBezierPath bezierPath];
+    const int ridges = 40;
+    for (int k = 0; k <= ridges * 4; ++k)
+    {
+        const CGFloat t = (CGFloat) (2.0 * M_PI * k / (ridges * 4));
+        const CGFloat r = rr * (1.0 - 0.04 * (0.5 - 0.5 * std::cos (ridges * t)));
+        const NSPoint p = polar (c.x, c.y, r, t + fa);
+        if (k == 0) [ring moveToPoint: p]; else [ring lineToPoint: p];
+    }
+    [ring closePath];
+    [NSGraphicsContext saveGraphicsState];
+    NSShadow* sh = [[[NSShadow alloc] init] autorelease];
+    [sh setShadowOffset: NSMakeSize (1.5, -3.0)];
+    [sh setShadowBlurRadius: 4.0];
+    [sh setShadowColor: [NSColor colorWithCalibratedWhite: 0.0 alpha: 0.55]];
+    [sh set];
+    [rgb (150, 64, 8) set];
+    [ring fill];
+    [NSGraphicsContext restoreGraphicsState];
+    NSGradient* rg = [[[NSGradient alloc] initWithColorsAndLocations: rgb (250, 150, 60), 0.0, rgb (150, 64, 8), 1.0, nil] autorelease];
+    [rg drawInBezierPath: ring relativeCenterPosition: NSMakePoint (-0.35, 0.5)];
+    [[NSColor colorWithCalibratedWhite: 0.0 alpha: 0.3] set];
+    for (int k = 0; k < ridges; ++k)
+    {
+        const CGFloat t = (CGFloat) (2.0 * M_PI * k / ridges) + fa;
+        strokeLine (polar (c.x, c.y, rr * 0.84, t).x, polar (c.x, c.y, rr * 0.84, t).y,
+                    polar (c.x, c.y, rr * 0.97, t).x, polar (c.x, c.y, rr * 0.97, t).y, 0.7);
+    }
+    [[NSColor whiteColor] set];
+    {
+        NSBezierPath* p = [NSBezierPath bezierPath];
+        [p moveToPoint: polar (c.x, c.y, rc + 2.0, fa)];
+        [p lineToPoint: polar (c.x, c.y, rr * 0.98, fa)];
+        [p setLineWidth: 2.6];
+        [p setLineCapStyle: NSRoundLineCapStyle];
+        [p stroke];
+    }
+    NSBezierPath* cap = [NSBezierPath bezierPathWithOvalInRect: NSMakeRect (c.x - rc, c.y - rc, 2 * rc, 2 * rc)];
+    [NSGraphicsContext saveGraphicsState];
+    NSShadow* cs = [[[NSShadow alloc] init] autorelease];
+    [cs setShadowOffset: NSMakeSize (0.8, -1.5)];
+    [cs setShadowBlurRadius: 2.0];
+    [cs setShadowColor: [NSColor colorWithCalibratedWhite: 0.0 alpha: 0.6]];
+    [cs set];
+    [rgb (36, 35, 33) set];
+    [cap fill];
+    [NSGraphicsContext restoreGraphicsState];
+    NSGradient* cg = [[[NSGradient alloc] initWithColorsAndLocations: rgb (120, 118, 112), 0.0, rgb (70, 68, 64), 0.5, rgb (34, 33, 31), 1.0, nil] autorelease];
+    [cg drawInBezierPath: cap relativeCenterPosition: NSMakePoint (-0.3, 0.45)];
+    [[NSColor colorWithCalibratedWhite: 0.0 alpha: 0.5] set];
+    [cap setLineWidth: 0.8];
+    [cap stroke];
+    [rgb (250, 248, 240) set];
+    NSBezierPath* q = [NSBezierPath bezierPath];
+    [q moveToPoint: polar (c.x, c.y, rc * 0.2, ga)];
+    [q lineToPoint: polar (c.x, c.y, rc * 0.92, ga)];
+    [q setLineWidth: 2.2];
+    [q setLineCapStyle: NSRoundLineCapStyle];
+    [q stroke];
+}
+
+// Small backlit VU (from TB M50 Dual Channel Strip): cream face, -20..+3, red over 0
+void drawVU (NSRect r, float db)
+{
+    NSColor* ink = rgb (28, 28, 26);
+    NSBezierPath* bezel = [NSBezierPath bezierPathWithRoundedRect: NSInsetRect (r, -3.0, -3.0) xRadius: 3.0 yRadius: 3.0];
+    [rgb (26, 25, 24) set];
+    [bezel fill];
+    NSBezierPath* face = [NSBezierPath bezierPathWithRect: r];
+    NSGradient* fg = [[[NSGradient alloc] initWithColorsAndLocations:
+                         rgb (255, 244, 206), 0.0, rgb (246, 226, 168), 0.7, rgb (226, 200, 140), 1.0, nil] autorelease];
+    [fg drawInBezierPath: face relativeCenterPosition: NSMakePoint (0.0, -0.3)];
+    [NSGraphicsContext saveGraphicsState];
+    [face addClip];
+    const NSPoint pivot = NSMakePoint (NSMidX (r), NSMaxY (r) + 26.0);
+    const CGFloat rad = r.size.height + 6.0;
+    struct T { float db; const char* txt; } ticks[] = {
+        { -20, "20" }, { -10, "10" }, { -7, "7" }, { -5, "5" }, { -3, "3" }, { -2, "" }, { -1, "" },
+        { 0, "0" }, { 1, "" }, { 2, "" }, { 3, "+3" } };
+    const CGFloat v0 = std::pow (10.0, -20.0 / 20.0), v1 = std::pow (10.0, 3.0 / 20.0);
+    #define VU_ANGLE(d) ((CGFloat) ((-40.0 + 80.0 * (std::pow (10.0, (d) / 20.0) - v0) / (v1 - v0)) * M_PI / 180.0))
+    {
+        NSBezierPath* arc = [NSBezierPath bezierPath];
+        [arc appendBezierPathWithArcWithCenter: pivot radius: rad - 9.0
+                                    startAngle: (CGFloat) (-90.0 + VU_ANGLE (0) * 180.0 / M_PI) endAngle: (CGFloat) (-90.0 + 40.0) clockwise: NO];
+        [arc setLineWidth: 4.0];
+        [rgb (204, 30, 24) set];
+        [arc stroke];
+        NSBezierPath* arc2 = [NSBezierPath bezierPath];
+        [arc2 appendBezierPathWithArcWithCenter: pivot radius: rad - 9.0
+                                     startAngle: -130.0 endAngle: (CGFloat) (-90.0 + VU_ANGLE (0) * 180.0 / M_PI) clockwise: NO];
+        [arc2 setLineWidth: 1.0];
+        [ink set];
+        [arc2 stroke];
+    }
+    for (size_t k = 0; k < sizeof (ticks) / sizeof (ticks[0]); ++k)
+    {
+        const CGFloat a = VU_ANGLE (ticks[k].db);
+        [(ticks[k].db > 0 ? rgb (204, 30, 24) : ink) set];
+        strokeLine (polar (pivot.x, pivot.y, rad - 11.0, a).x, polar (pivot.x, pivot.y, rad - 11.0, a).y,
+                    polar (pivot.x, pivot.y, rad - 5.0, a).x, polar (pivot.x, pivot.y, rad - 5.0, a).y, 1.0);
+        if (ticks[k].txt[0])
+        {
+            const NSPoint p = polar (pivot.x, pivot.y, rad + 1.0, a);
+            drawText (ticks[k].txt, boldFont (7.0), ticks[k].db > 0 ? rgb (190, 26, 20) : ink, p.x, p.y);
+        }
+    }
+    drawText ("VU", boldFont (9.0), ink, NSMidX (r), NSMaxY (r) - 13.0);
+    float d = db < -22.0f ? -22.0f : (db > 4.0f ? 4.0f : db);
+    CGFloat a = VU_ANGLE (d);
+    if (db <= -59.0f) a = (CGFloat) (-43.0 * M_PI / 180.0);
+    [rgb (16, 16, 16) set];
+    strokeLine (pivot.x, pivot.y, polar (pivot.x, pivot.y, rad - 2.0, a).x, polar (pivot.x, pivot.y, rad - 2.0, a).y, 1.2);
+    #undef VU_ANGLE
+    [NSGraphicsContext restoreGraphicsState];
+    [rgba (255, 255, 255, 0.18) set];
+    NSRectFillUsingOperation (NSMakeRect (NSMinX (r), NSMinY (r), r.size.width, r.size.height * 0.35), NSCompositeSourceOver);
+    [rgb (20, 20, 20) set];
+    NSFrameRectWithWidth (r, 1.0);
 }
 
 inline NSPoint viewToFace (NSPoint p) { return NSMakePoint (p.x - F, p.y - F); }
@@ -610,6 +756,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     NSImage* backdrop;
     long lastSig;
     float flashWas;
+    float vuWas[2];
     NSTimer* timer;
 }
 
@@ -637,6 +784,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         backdrop = nil;
         lastSig = -1;
         flashWas = 0.0f;
+        vuWas[0] = vuWas[1] = -60.0f;
         paintOn = false;
         paintRow = -1;
         dragStartY = 0.0;
@@ -763,6 +911,13 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         [self setNeedsDisplay: YES];
     }
     flashWas = fl;
+    const float vl = e.vuDb (0), vr = e.vuDb (1);
+    if (std::fabs (vl - vuWas[0]) > 0.2f || std::fabs (vr - vuWas[1]) > 0.2f)
+    {
+        vuWas[0] = vl;
+        vuWas[1] = vr;
+        [self setNeedsDisplayInRect: NSMakeRect (kSideX + F, F, kSW, 100.0)];
+    }
     if (messageUntil > 0.0 && messageUntil < [NSDate timeIntervalSinceReferenceDate]) messageUntil = 0.0;
 }
 
@@ -772,6 +927,9 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 - (float) knobValue: (int) k
 {
     const tbdm::Song& s = core->engine.song();
+    if (k >= kKFader) return s.fader;
+    if (k >= kKEqGain) return s.eqGain[(k - kKEqGain) % 3];
+    if (k >= kKEqFreq) return s.eqFreq[(k - kKEqFreq) % 3];
     if (k == kKTempo) return (s.tempo - 30.0f) / 270.0f;
     if (k == kKSwing) return s.swing / 0.5f;
     if (k == kKAccent) return s.accent;
@@ -790,7 +948,10 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     tbdm::Engine& e = core->engine;
     e.lock();
     tbdm::Song& s = e.song();
-    if (k == kKTempo) s.tempo = (float) (std::floor ((30.0f + 270.0f * v) * 10.0f + 0.5f) / 10.0f);
+    if (k >= kKFader) s.fader = v;
+    else if (k >= kKEqGain) s.eqGain[(k - kKEqGain) % 3] = (std::fabs (v - 0.5f) < 0.008f) ? 0.5f : v;
+    else if (k >= kKEqFreq) s.eqFreq[(k - kKEqFreq) % 3] = v;
+    else if (k == kKTempo) s.tempo = (float) (std::floor ((30.0f + 270.0f * v) * 10.0f + 0.5f) / 10.0f);
     else if (k == kKSwing) s.swing = 0.5f * v;
     else if (k == kKAccent) s.accent = v;
     else if (k == kKMaster) s.master = v;
@@ -812,6 +973,8 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (float) knobDefault: (int) k
 {
+    if (k >= kKFader) return 0.75f;
+    if (k >= kKEqFreq) return 0.5f;
     if (k == kKTempo) return (120.0f - 30.0f) / 270.0f;
     if (k == kKSwing) return 0.0f;
     if (k == kKAccent) return 0.5f;
@@ -833,7 +996,25 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     const tbdm::Song& s = core->engine.song();
     char t[128];
     const int ch = k & 15;
-    if (k == kKTempo) std::snprintf (t, sizeof (t), "TEMPO   %.1f BPM", s.tempo);
+    if (k >= kKFader)
+    {
+        const double db = MasterSection::faderDb (s.fader);
+        if (s.fader <= 0.0f) std::snprintf (t, sizeof (t), "STEREO MASTER   OFF");
+        else std::snprintf (t, sizeof (t), "STEREO MASTER   %.1f   (%+.1f dB)", s.fader * 10.0f, db);
+    }
+    else if (k >= kKEqGain)
+    {
+        const int b = (k - kKEqGain) % 3;
+        std::snprintf (t, sizeof (t), "%s   %+.1f dB%s", kBandName[b], MasterSection::eqDb (s.eqGain[b]), s.eqBypass ? "   (EQ BYPASSED)" : "");
+    }
+    else if (k >= kKEqFreq)
+    {
+        const int b = (k - kKEqFreq) % 3;
+        const double hz = MasterSection::eqHz (b, s.eqFreq[b]);
+        if (hz >= 1000.0) std::snprintf (t, sizeof (t), "%s FREQ   %.2f kHz", kBandName[b], hz / 1000.0);
+        else std::snprintf (t, sizeof (t), "%s FREQ   %.0f Hz", kBandName[b], hz);
+    }
+    else if (k == kKTempo) std::snprintf (t, sizeof (t), "TEMPO   %.1f BPM", s.tempo);
     else if (k == kKSwing) std::snprintf (t, sizeof (t), "SWING   %d%%", (int) (50.0f + s.swing * 50.0f + 0.5f));
     else if (k == kKAccent) std::snprintf (t, sizeof (t), "ACCENT   %.1f", s.accent * 10.0f);
     else if (k == kKMaster) std::snprintf (t, sizeof (t), "MASTER   %.1f", s.master * 10.0f);
@@ -887,12 +1068,167 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 //------------------------------------------------------------------------------
 // Drawing
 
+// The sidecar's fixed parts, drawn into the backdrop (called inside its lockFocus)
+- (void) drawSidecarBackdrop
+{
+    [NSGraphicsContext saveGraphicsState];
+    NSAffineTransform* tr = [NSAffineTransform transform];
+    [tr translateXBy: kSideX + F yBy: F];
+    [tr concat];
+    NSRectClip (NSMakeRect (0, 0, kSW, kFaceHeight));
+    NSColor* ink = rgb (28, 28, 26);
+    NSGradient* face = [[[NSGradient alloc] initWithStartingColor: rgb (204, 200, 191) endingColor: rgb (182, 178, 169)] autorelease];
+    [face drawInRect: NSMakeRect (0, 0, kSW, kStripTop) angle: 90.0];
+    unsigned seed = 51u;
+    for (int k = 0; k < 3000; ++k)
+    {
+        seed = seed * 1664525u + 1013904223u; const CGFloat x = (seed >> 8) / 16777216.0 * kSW;
+        seed = seed * 1664525u + 1013904223u; const CGFloat y = (seed >> 8) / 16777216.0 * kStripTop;
+        seed = seed * 1664525u + 1013904223u; const double q = (seed >> 8) / 16777216.0;
+        [[NSColor colorWithCalibratedWhite: q < 0.5 ? 1.0 : 0.0 alpha: 0.035 + 0.04 * q] set];
+        NSRectFillUsingOperation (NSMakeRect (x, y, 3.0, 1.0), NSCompositeSourceOver);
+    }
+    drawText ("L", boldFont (11.0), ink, NSMidX (kVuRect[0]), 106.0);
+    drawText ("R", boldFont (11.0), ink, NSMidX (kVuRect[1]), 106.0);
+    drawText ("PROGRAM", boldFont (8.0), ink, kSCx, 106.0);
+    [ink set];
+    strokeLine (20.0, 122.0, kSW - 20.0, 122.0, 1.0);
+    drawText ("EQUALIZER", boldFont (10.0), ink, kSCx, 134.0);
+    drawText ("BYPASS", boldFont (8.0), ink, kSCx, 184.0);
+    drawText ("FREQ", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 34.0);
+    drawText ("BOOST", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 25.0);
+    drawText ("CUT", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 16.0);
+    for (int b = 0; b < 3; ++b)
+    {
+        const NSPoint c = NSMakePoint (kSCx, bandY (b));
+        drawText (kBandName[b], boldFont (9.0), ink, 30.0, bandY (b) - 30.0);
+        drawEnds (c, kRingR, kBandLo[b], 0, kBandHi[b]);
+    }
+    [ink set];
+    strokeLine (20.0, 460.0, kSW - 20.0, 460.0, 1.0);
+    drawText ("STEREO MASTER", boldFont (11.0), ink, kSCx, 474.0);
+    NSBezierPath* slot = [NSBezierPath bezierPathWithRoundedRect: NSMakeRect (kSCx - 3.0, kSFaderTop - 12.0, 6.0, kSFaderBot - kSFaderTop + 24.0) xRadius: 3.0 yRadius: 3.0];
+    [rgb (24, 23, 22) set];
+    [slot fill];
+    for (int k = 0; k <= 10; ++k)
+    {
+        const CGFloat y = sFaderY (k / 10.0f);
+        [ink set];
+        strokeLine (kSCx - 30.0, y, kSCx - 18.0, y, k == 0 || k == 10 || k == 5 ? 1.4 : 0.9);
+        strokeLine (kSCx + 18.0, y, kSCx + 30.0, y, k == 0 || k == 10 || k == 5 ? 1.4 : 0.9);
+        char n[4];
+        std::snprintf (n, sizeof (n), "%d", k);
+        drawText (n, boldFont (8.0), ink, kSCx - 40.0, y + 0.5);
+    }
+    {
+        const NSRect lip = NSMakeRect (0, kStripTop - 12.0, kSW, 12.0);
+        NSGradient* lg = [[[NSGradient alloc] initWithColorsAndLocations:
+                             rgb (40, 38, 36), 0.0, rgb (40, 38, 36), 0.25, rgb (214, 52, 30), 0.3,
+                             rgb (186, 40, 24), 0.7, rgb (40, 38, 36), 0.75, rgb (30, 29, 27), 1.0, nil] autorelease];
+        [lg drawInRect: lip angle: 90.0];
+    }
+    NSGradient* strip = [[[NSGradient alloc] initWithStartingColor: rgb (168, 164, 156) endingColor: rgb (150, 146, 139)] autorelease];
+    [strip drawInRect: NSMakeRect (0, kStripTop, kSW, kFaceHeight - kStripTop) angle: 90.0];
+    [rgb (30, 29, 27) set];
+    NSRectFill (NSMakeRect (0, kStripTop, kSW, 1.5));
+    drawModelName ("M-50", kSCx, 694.0, 26.0);
+    drawText ("MASTER", boldFont (10.0), ink, kSCx, 730.0);
+    [rgba (0, 0, 0, 0.6) set];
+    NSFrameRectWithWidth (NSMakeRect (0, 0, kSW, kFaceHeight), 1.0);
+    [NSGraphicsContext restoreGraphicsState];
+    for (int k = 0; k < 6; ++k)
+    {
+        [rgba (0, 0, 0, 0.22 - 0.035 * k) set];
+        NSFrameRectWithWidth (NSMakeRect (kSideX + F + k, F + k, kSW - 2 * k, kFaceHeight - 2 * k), 1.0);
+    }
+}
+
+// The sidecar's moving parts: VUs, EQ BYPASS, the EQ controls, the fader
+- (void) drawSidecar
+{
+    tbdm::Engine& e = core->engine;
+    const tbdm::Song& s = e.song();
+    [NSGraphicsContext saveGraphicsState];
+    NSAffineTransform* tr = [NSAffineTransform transform];
+    [tr translateXBy: kSideX + F yBy: F];
+    [tr concat];
+    NSRectClip (NSMakeRect (0, 0, kSW, kFaceHeight));
+    for (int c = 0; c < 2; ++c) drawVU (kVuRect[c], e.vuDb (c));
+    {
+        const NSRect r = kBypassRect;
+        NSBezierPath* bp = [NSBezierPath bezierPathWithRoundedRect: NSInsetRect (r, -2.5, -2.5) xRadius: 2.0 yRadius: 2.0];
+        [rgb (30, 29, 28) set];
+        [bp fill];
+        NSBezierPath* cp = [NSBezierPath bezierPathWithRoundedRect: r xRadius: 1.5 yRadius: 1.5];
+        if (s.eqBypass)
+        {
+            [NSGraphicsContext saveGraphicsState];
+            setGlow (rgb (255, 40, 24), 14.0);
+            [rgb (255, 40, 24) set];
+            [cp fill];
+            [NSGraphicsContext restoreGraphicsState];
+            NSGradient* g = [[[NSGradient alloc] initWithColorsAndLocations: rgb (255, 230, 214), 0.0, rgb (255, 110, 86), 0.35, rgb (232, 30, 18), 1.0, nil] autorelease];
+            [g drawInBezierPath: cp relativeCenterPosition: NSMakePoint (0.0, 0.0)];
+        }
+        else
+        {
+            NSGradient* g = [[[NSGradient alloc] initWithStartingColor: rgb (226, 222, 212) endingColor: rgb (170, 166, 158)] autorelease];
+            [g drawInBezierPath: cp angle: -90.0];
+        }
+        [rgba (0, 0, 0, 0.5) set];
+        [cp setLineWidth: 0.8];
+        [cp stroke];
+    }
+    for (int b = 0; b < 3; ++b) drawConcentric (NSMakePoint (kSCx, bandY (b)), kRingR, s.eqFreq[b], kCapR, s.eqGain[b]);
+    {
+        const CGFloat y = sFaderY (s.fader);
+        const NSRect r = NSMakeRect (kSCx - 22.0, y - 9.0, 44.0, 18.0);
+        NSBezierPath* cp = [NSBezierPath bezierPathWithRoundedRect: r xRadius: 2.5 yRadius: 2.5];
+        [NSGraphicsContext saveGraphicsState];
+        NSShadow* sh = [[[NSShadow alloc] init] autorelease];
+        [sh setShadowOffset: NSMakeSize (2.0, -4.0)];
+        [sh setShadowBlurRadius: 5.0];
+        [sh setShadowColor: [NSColor colorWithCalibratedWhite: 0.0 alpha: 0.6]];
+        [sh set];
+        [rgb (150, 146, 132) set];
+        [cp fill];
+        [NSGraphicsContext restoreGraphicsState];
+        NSGradient* g = [[[NSGradient alloc] initWithColorsAndLocations:
+                            rgb (250, 246, 232), 0.0, rgb (234, 228, 208), 0.45, rgb (190, 184, 164), 0.55, rgb (226, 220, 200), 1.0, nil] autorelease];
+        [g drawInBezierPath: cp angle: -90.0];
+        [rgb (60, 58, 52) set];
+        [cp setLineWidth: 0.8];
+        [cp stroke];
+        [rgb (20, 20, 20) set];
+        strokeLine (kSCx - 19.0, y, kSCx + 19.0, y, 2.0);
+    }
+    [NSGraphicsContext restoreGraphicsState];
+}
+
+// Sidecar control under a point (sidecar face coordinates): knob id, -2 for
+// EQ BYPASS, -1 for nothing
+- (int) sideControlAt: (NSPoint) sp
+{
+    if (inRect (sp, NSInsetRect (kBypassRect, -4.0, -4.0))) return -2;
+    for (int b = 0; b < 3; ++b)
+    {
+        const CGFloat dx = sp.x - kSCx, dy = sp.y - bandY (b);
+        const CGFloat d = std::sqrt (dx * dx + dy * dy);
+        if (d <= kCapR) return kKEqGain + b;
+        if (d <= kRingR + 4.0) return kKEqFreq + b;
+    }
+    if (inRect (sp, NSMakeRect (kSCx - 26.0, kSFaderTop - 14.0, 52.0, kSFaderBot - kSFaderTop + 28.0))) return kKFader;
+    return -1;
+}
+
 - (NSImage*) backdropImage
 {
     if (backdrop) return backdrop;
     backdrop = [[NSImage alloc] initWithSize: NSMakeSize (kViewWidth, kViewHeight)];
     [backdrop lockFocusFlipped: YES];
-    drawMahoganyFrame();
+    drawMahoganyFrame (0.0, kMainWidth);
+    drawMahoganyFrame (kSideX, kViewWidth - kSideX);
+    [self drawSidecarBackdrop];
     [NSGraphicsContext saveGraphicsState];
     NSAffineTransform* tr = [NSAffineTransform transform];
     [tr translateXBy: F yBy: F];
@@ -1395,6 +1731,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     else [self drawSongPage];
     [self drawStrip];
     [NSGraphicsContext restoreGraphicsState];
+    [self drawSidecar];
 }
 
 //------------------------------------------------------------------------------
@@ -2008,6 +2345,31 @@ static std::string cleanName (const char* s)
     dragKind = 0;
     paintRow = -1;
 
+    // the M-50 Master sidecar
+    if (p.x + F >= kSideX)
+    {
+        const int sc = [self sideControlAt: viewToSide (NSMakePoint (p.x + F, p.y + F))];
+        if (sc == -2)
+        {
+            e.lock();
+            e.song().eqBypass = ! e.song().eqBypass;
+            e.unlock();
+            [self setReadout: e.song().eqBypass ? "EQ BYPASS   ON (EQ OUT)" : "EQ BYPASS   OFF (EQ IN)"];
+            [self touched];
+        }
+        else if (sc >= 0)
+        {
+            if ([ev clickCount] >= 2) { [self setKnob: sc value: [self knobDefault: sc]]; return; }
+            dragKind = 1;
+            dragId = sc;
+            dragStartY = p.y;
+            dragStartV = [self knobValue: sc];
+            [self describeKnob: sc];
+            [self setNeedsDisplay: YES];
+        }
+        return;
+    }
+
     // knobs and faders
     const int k = [self knobAt: p];
     if (k >= 0)
@@ -2209,7 +2571,7 @@ static std::string cleanName (const char* s)
     if (dragKind == 1)
     {
         const bool fine = ([ev modifierFlags] & NSShiftKeyMask) != 0;
-        const CGFloat range = dragId >= kKLevel ? (kFaderBot - kFaderTop) : 200.0;
+        const CGFloat range = dragId == kKFader ? (kSFaderBot - kSFaderTop) : ((dragId >= kKLevel && dragId < kKEqFreq) ? (kFaderBot - kFaderTop) : 200.0);
         const float v = (float) (dragStartV + (dragStartY - p.y) / range * (fine ? 0.1 : 1.0));
         [self setKnob: dragId value: v];
     }
@@ -2228,7 +2590,8 @@ static std::string cleanName (const char* s)
     if (! core) return;
     [self syncOrder];
     const NSPoint p = viewToFace ([self convertPoint: [ev locationInWindow] fromView: nil]);
-    const int k = [self knobAt: p];
+    int k = [self knobAt: p];
+    if (p.x + F >= kSideX) k = [self sideControlAt: viewToSide (NSMakePoint (p.x + F, p.y + F))];
     if (k < 0) return;
     const CGFloat dy = [ev deltaY];
     if (dy == 0.0) return;
@@ -2273,5 +2636,12 @@ static std::string cleanName (const char* s)
 - (NSRect) rectForEditMode: (int) i { return faceToView (modeRect (i)); }
 - (NSRect) readoutRect { return faceToView (kReadout); }
 - (int) rowForPad: (int) pad { [self syncOrder]; return padPos (pad) + 1; }
+- (NSPoint) sidePoint: (int) which
+{
+    if (which == 0) return sideToView (NSMakePoint (NSMidX (kBypassRect), NSMidY (kBypassRect)));
+    if (which >= 1 && which <= 3) return sideToView (NSMakePoint (kSCx, bandY (which - 1)));
+    if (which >= 4 && which <= 6) return sideToView (NSMakePoint (kSCx + kRingR - 5.0, bandY (which - 4)));
+    return sideToView (NSMakePoint (kSCx, sFaderY (core->engine.song().fader)));
+}
 
 @end
