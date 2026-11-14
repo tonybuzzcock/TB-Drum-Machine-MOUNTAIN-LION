@@ -128,10 +128,10 @@ const NSRect kExportMidi = { { 996.0, 708.0 }, { 160.0, 52.0 } };
 // M-50 Master sidecar (its own face coordinates, 216 wide)
 const CGFloat kSW = kSideFaceWidth, kSCx = 108.0;
 const NSRect kVuRect[2] = { { { 14.0, 30.0 }, { 88.0, 60.0 } }, { { 114.0, 30.0 }, { 88.0, 60.0 } } };
-const NSRect kBypassRect = { { 92.0, 150.0 }, { 32.0, 22.0 } };
+const NSRect kBypassRect = { { 92.0, 140.0 }, { 32.0, 22.0 } };
 const CGFloat kRingR = 31.0, kCapR = 18.0;
-inline CGFloat bandY (int b) { return 418.0 - 90.0 * b; }        // LOW 418, MID 328, HIGH 238
-const CGFloat kSFaderTop = 494.0, kSFaderBot = 600.0;
+inline CGFloat bandY (int b) { return 392.0 - 84.0 * b; }        // LOW 392, MID 308, HIGH 224
+const CGFloat kSFaderTop = 492.0, kSFaderBot = 600.0;
 inline CGFloat sFaderY (float v) { return kSFaderBot - (kSFaderBot - kSFaderTop) * v; }
 inline NSPoint viewToSide (NSPoint vp) { return NSMakePoint (vp.x - kSideX - kPanelFrame, vp.y - kPanelFrame); }
 inline NSPoint sideToView (NSPoint sp) { return NSMakePoint (sp.x + kSideX + kPanelFrame, sp.y + kPanelFrame); }
@@ -1092,9 +1092,9 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     drawText ("R", boldFont (11.0), ink, NSMidX (kVuRect[1]), 106.0);
     drawText ("PROGRAM", boldFont (8.0), ink, kSCx, 106.0);
     [ink set];
-    strokeLine (20.0, 122.0, kSW - 20.0, 122.0, 1.0);
-    drawText ("EQUALIZER", boldFont (10.0), ink, kSCx, 134.0);
-    drawText ("BYPASS", boldFont (8.0), ink, kSCx, 184.0);
+    strokeLine (20.0, 116.0, kSW - 20.0, 116.0, 1.0);
+    drawText ("EQUALIZER", boldFont (10.0), ink, kSCx, 128.0);
+    drawText ("BYPASS", boldFont (8.0), ink, kSCx, 173.0);
     drawText ("FREQ", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 34.0);
     drawText ("BOOST", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 25.0);
     drawText ("CUT", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 16.0);
@@ -1105,8 +1105,8 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         drawEnds (c, kRingR, kBandLo[b], 0, kBandHi[b]);
     }
     [ink set];
-    strokeLine (20.0, 460.0, kSW - 20.0, 460.0, 1.0);
-    drawText ("STEREO MASTER", boldFont (11.0), ink, kSCx, 474.0);
+    strokeLine (20.0, 450.0, kSW - 20.0, 450.0, 1.0);
+    drawText ("STEREO MASTER", boldFont (11.0), ink, kSCx, 464.0);
     NSBezierPath* slot = [NSBezierPath bezierPathWithRoundedRect: NSMakeRect (kSCx - 3.0, kSFaderTop - 12.0, 6.0, kSFaderBot - kSFaderTop + 24.0) xRadius: 3.0 yRadius: 3.0];
     [rgb (24, 23, 22) set];
     [slot fill];
