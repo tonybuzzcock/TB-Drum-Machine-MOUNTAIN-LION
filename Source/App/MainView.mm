@@ -836,7 +836,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
             if (active)
             {
                 Lit c = tr == kAccentTrack ? kYellow : (s.choice ? kAmber : kRed);
-                const bool dim = tr != kAccentTrack && (e.song().channels[tr].mute || (anySolo && ! e.song().channels[tr].solo));
+                const bool dim = tr != kAccentTrack && (! used || e.song().channels[tr].mute || (anySolo && ! e.song().channels[tr].solo));
                 if (dim) c.r = c.r * 2 / 3, c.g = c.g * 2 / 3, c.b = c.b * 2 / 3;
                 [NSGraphicsContext saveGraphicsState];
                 if (! dim) setGlow (litColor (c), 7.0);
@@ -1039,8 +1039,6 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
             char sub[64];
             std::snprintf (sub, sizeof (sub), "%s  %s", kitDef (P.kit).name, P.name);
             drawText (sub, plainFont (fitSize (sub, 10.0, r.size.width - 16.0, false)), tc, r.origin.x + 8.0, NSMaxY (r) - 12.0, 0.0);
-            std::snprintf (n, sizeof (n), "%d", i + 1);
-            drawText (n, plainFont (8.5), now ? ink : rgb (160, 162, 166), NSMidX (r), r.origin.y + 8.0);
         }
         else
         {
