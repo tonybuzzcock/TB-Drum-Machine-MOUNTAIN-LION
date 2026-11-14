@@ -1,0 +1,9 @@
+build/
+Tests/engine_test
+Tests/engine_test_asan
+Tests/renders/
+*.o
+.DS_Store
+# the user's drum samples stay out of this public repo
+Kits/
+*.wav

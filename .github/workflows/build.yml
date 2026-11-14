@@ -1,0 +1,89 @@
+name: Build and test
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # lets tagged builds attach the app to a GitHub Release
+
+env:
+  APP_NAME: TB Drum Machine
+  APP_ZIP: TB-Drum-Machine-mountain-lion-app.zip
+  ENGINE_SRC: Source/Engine/Engine.cpp Source/Engine/Wav.cpp Source/Engine/Export.cpp
+
+jobs:
+  linux-tests:
+    name: Engine tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Engine tests (C++98)
+        run: make -C Tests run CXX=g++
+
+      - name: Engine tests under AddressSanitizer
+        run: make -C Tests asan CXX=g++
+
+  mountain-lion-app:
+    name: TB Drum Machine.app for OS X 10.8.5 Mountain Lion (Intel)
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: App icon
+        run: |
+          mkdir -p build
+          iconutil -c icns Resources/TBDrumMachine.iconset -o build/TBDrumMachine.icns
+
+      - name: Build and verify the app
+        run: scripts/build_app_mac.sh
+
+      - name: Run the engine tests on the Intel runner
+        run: |
+          xcrun clang++ -arch x86_64 -mmacosx-version-min=10.8.5 -std=c++98 -stdlib=libc++ -O2 \
+            $ENGINE_SRC Tests/engine_test.cpp -o build/engine_test
+          build/engine_test
+
+      - name: Open the app offscreen, drive the panel, render screenshots
+        run: |
+          rm -rf build/gui && mkdir -p build/gui
+          perl -e 'alarm 300; exec @ARGV' "build/$APP_NAME.app/Contents/MacOS/TBDrumMachine" --selftest build/gui
+
+      - name: Upload panel screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: panel-screenshots
+          path: build/gui/*.png
+
+      - name: Publish panel screenshots to the gui-preview branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf /tmp/preview && mkdir /tmp/preview && cp build/gui/*.png /tmp/preview/
+          cd /tmp/preview
+          git init -q && git checkout -q -b gui-preview
+          git -c user.name="github-actions" -c user.email="actions@github.com" add .
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -q -m "Panel screenshots for $GITHUB_SHA"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gui-preview
+
+      - name: Upload the app
+        uses: actions/upload-artifact@v4
+        with:
+          name: TB-Drum-Machine-mountain-lion-app
+          path: build/${{ env.APP_ZIP }}
+
+      - name: Attach to GitHub Release (tagged builds only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "build/$APP_ZIP" \
+            --title "TB Drum Machine $GITHUB_REF_NAME" \
+            --notes "Stand-alone drum machine, 64-bit Intel, OS X 10.8.5 Mountain Lion and later. Unzip and copy \"TB Drum Machine.app\" to Applications." \
+          || gh release upload "$GITHUB_REF_NAME" "build/$APP_ZIP" --clobber
