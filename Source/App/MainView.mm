@@ -1818,8 +1818,8 @@ static std::string cleanName (const char* s)
     if (audio)
     {
         what = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, rowH, 260, 26) pullsDown: NO] autorelease];
-        [what addItemWithTitle: @"Stereo mix (one WAV)"];
-        [what addItemWithTitle: @"Separate tracks (one WAV per pad)"];
+        [what addItemWithTitle: @"Stereo mix (one stereo WAV)"];
+        [what addItemWithTitle: @"Separate tracks (one mono WAV per pad)"];
         [what addItemWithTitle: @"Both: stereo mix and separate tracks"];
         [acc addSubview: what];
         rates = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, 0, 260, 26) pullsDown: NO] autorelease];

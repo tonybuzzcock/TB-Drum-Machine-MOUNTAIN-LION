@@ -76,8 +76,9 @@ Knobs: drag up and down (hold Shift for fine changes), double-click to reset, or
   (CR-78 conga 64, bongo 60, cabassa 69). Velocity 112 and up counts as accented.
 - **EXPORT AUDIO**: the song once through, or the current pattern 1–32 times, rendered offline
   as 24-bit stereo at **44.1 or 48 kHz**. You can export a **stereo mix**, **separate tracks** or
-  **both**. Separate tracks are one WAV per pad that plays (`01 KICK.wav`, `02 SNARE.wav`… in panel
-  order), each with its own level, pan, tune and decay, and all the full length of the mix so they
+  **both**. Only the overall mix is stereo. Separate tracks are one **mono** WAV per pad that plays
+  (`01 KICK.wav`, `02 SNARE.wav`… in panel order), each with its own level, tune and decay (pan is
+  left to the DAW), and all the full length of the mix so they
   line up from bar 1 in a DAW. They go in a folder named after the file (`My Song Tracks`). Muted
   pads still get a track. The last hits' tail is included.
 - **EXPORT MIDI**: the same choice as a Standard MIDI File (type 0, 96 PPQN, channel 10,

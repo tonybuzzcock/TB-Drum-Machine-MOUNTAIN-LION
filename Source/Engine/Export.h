@@ -46,9 +46,9 @@ bool exportMidi (const char* path, const Song& song, const ExportRange& r);
 bool exportWav (const char* path, const Song& song, const KitBank& kits, const ExportRange& r,
                 int sampleRate, double tailSeconds, long* framesOut = 0);
 
-// Separate tracks: one 24-bit stereo WAV per pad that plays in the range, each
+// Separate tracks: one 24-bit MONO WAV per pad that plays in the range, each
 // the full length of the mix (so they line up from bar 1 in a DAW), with the
-// pad's level, pan, tune and decay. Written into dir as "01 KICK.wav" etc.,
+// pad's level, tune and decay (pan is left to the DAW; only the mix is stereo). Written into dir as "01 KICK.wav" etc.,
 // numbered in `order` (pad indices in panel order; 0 = 0..10). Returns the
 // number of tracks written, or -1 if a file can't be written.
 int exportWavTracks (const char* dir, const Song& song, const KitBank& kits, const ExportRange& r,

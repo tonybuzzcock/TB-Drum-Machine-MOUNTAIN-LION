@@ -421,10 +421,14 @@ int exportWavTracks (const char* dir, const Song& song, const KitBank& kits, con
             if (name[c] == '/') { while (! clean.empty() && clean[clean.size() - 1] == ' ') clean.erase (clean.size() - 1); clean += '-'; while (c + 1 < name.size() && name[c + 1] == ' ') ++c; }
             else clean += name[c];
         }
-        renderRange (song, kits, r, rate, tailSeconds, pad, frames, L, R);
+        // mono: the pad centred (pan is for the stereo mix; at centre both sides
+        // carry the pad at its full level), written as one channel
+        Song solo = song;
+        solo.channels[pad].pan = 0.0f;
+        renderRange (solo, kits, r, rate, tailSeconds, pad, frames, L, R);
         char path[2300];
         std::snprintf (path, sizeof (path), "%s/%02d %s.wav", dir, written + 1, clean.c_str());
-        if (! writeWav24 (path, &L[0], &R[0], frames, rate)) return -1;
+        if (! writeWav24 (path, &L[0], 0, frames, rate)) return -1;
         ++written;
     }
     return written;

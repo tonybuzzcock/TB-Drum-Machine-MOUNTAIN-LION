@@ -432,7 +432,7 @@ int main (int argc, char** argv)
         for (int k = 0; k < 16; k += 4) setStep (s.patterns[0], 0, k);
         setStep (s.patterns[0], 7, 2, 1);
         setStep (s.patterns[0], 6, 12, 0);
-        s.channels[7].pan = -0.6f;
+        s.channels[7].pan = -0.6f;       // the mix is panned; the mono track isn't
         s.channels[6].mute = true;       // muted in the mix, but still gets its own track
         ExportRange r = { false, 0, 2 };
         const char* dir = "/tmp/tbdm_tracks";
@@ -448,9 +448,15 @@ int main (int argc, char** argv)
                         && readWav ("/tmp/tbdm_tracks/03 CLAP-TAMB.wav", c, nc, rc);
         check (ok, "named 01 KICK, 02 HI-HAT, 03 CLAP-TAMB in panel order");
         check (ok && na == frames && nb == frames && nc == frames, "every track as long as the mix");
+        FILE* tf = std::fopen ("/tmp/tbdm_tracks/01 KICK.wav", "rb");
+        unsigned char hdr[44];
+        const bool mono = tf && std::fread (hdr, 1, 44, tf) == 44 && hdr[22] == 1 && hdr[34] == 24;
+        if (tf) std::fclose (tf);
+        check (mono, "tracks are 24-bit mono");
         // the unmuted tracks add up to the mix (levels low enough that the limiter stays out)
         s.channels[6].mute = false;
         s.channels[6].level = 0.0f;
+        s.channels[7].pan = 0.0f;
         exportWav ("/tmp/tbdm_tracks/mix.wav", s, kb, r, 44100, 2.0);
         float* m = 0;
         int nm = 0;

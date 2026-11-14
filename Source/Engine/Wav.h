@@ -13,7 +13,7 @@ bool readWav (const char* path, float*& data, int& frames, double& rate);
 // Parses a WAV image in memory (used by readWav and the tests).
 bool parseWav (const unsigned char* bytes, long size, float*& data, int& frames, double& rate);
 
-// 24-bit stereo, samples clipped to +-1.
+// 24-bit stereo, samples clipped to +-1. R = 0: a mono file from L.
 bool writeWav24 (const char* path, const float* L, const float* R, long frames, int rate);
 
 } // namespace tbdm

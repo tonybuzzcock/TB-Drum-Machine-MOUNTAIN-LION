@@ -134,16 +134,17 @@ bool writeWav24 (const char* path, const float* L, const float* R, long frames, 
 {
     FILE* f = std::fopen (path, "wb");
     if (! f) return false;
-    const unsigned dataBytes = (unsigned) (frames * 6);
+    const int ch = R ? 2 : 1;
+    const unsigned dataBytes = (unsigned) (frames * 3 * ch);
     std::fwrite ("RIFF", 1, 4, f);
     wr32 (f, 36 + dataBytes);
     std::fwrite ("WAVEfmt ", 1, 8, f);
     wr32 (f, 16);
     wr16 (f, 1);
-    wr16 (f, 2);
+    wr16 (f, (unsigned) ch);
     wr32 (f, (unsigned) rate);
-    wr32 (f, (unsigned) rate * 6);
-    wr16 (f, 6);
+    wr32 (f, (unsigned) rate * 3 * ch);
+    wr16 (f, (unsigned) (3 * ch));
     wr16 (f, 24);
     std::fwrite ("data", 1, 4, f);
     wr32 (f, dataBytes);
@@ -155,20 +156,20 @@ bool writeWav24 (const char* path, const float* L, const float* R, long frames, 
         int n = 0;
         for (; n < 512 && i < frames; ++n, ++i)
         {
-            for (int c = 0; c < 2; ++c)
+            for (int c = 0; c < ch; ++c)
             {
                 double v = c == 0 ? L[i] : R[i];
                 if (v != v) v = 0.0;
                 if (v > 1.0) v = 1.0;
                 if (v < -1.0) v = -1.0;
                 int s = (int) (v * 8388607.0 + (v >= 0 ? 0.5 : -0.5));
-                unsigned char* q = buf + n * 6 + c * 3;
+                unsigned char* q = buf + (n * ch + c) * 3;
                 q[0] = (unsigned char) s;
                 q[1] = (unsigned char) (s >> 8);
                 q[2] = (unsigned char) (s >> 16);
             }
         }
-        std::fwrite (buf, 1, (size_t) n * 6, f);
+        std::fwrite (buf, 1, (size_t) n * 3 * ch, f);
     }
     const bool ok = std::ferror (f) == 0;
     std::fclose (f);
