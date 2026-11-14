@@ -398,7 +398,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     NSTextField* retiredField;
     int namingPattern;
     int selEntry;
-    Pattern clipboard;
+    tbdm::Pattern clipboard;
     bool clipboardFull;
     NSTimeInterval clearArmedUntil, clearSongArmedUntil;
     NSImage* backdrop;
@@ -521,7 +521,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 {
     (void) t;
     if (! core) return;
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     long sig = (long) e.playStep() * 7919 + e.currentPattern() * 131 + e.queuedPattern() * 17 + (e.isPlaying() ? 3 : 0)
              + (e.isRecording() ? 5 : 0) + e.songPosition() * 104729L;
     float fl = 0.0f;
@@ -541,7 +541,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (float) knobValue: (int) k
 {
-    const Song& s = core->engine.song();
+    const tbdm::Song& s = core->engine.song();
     if (k == kKTempo) return (s.tempo - 30.0f) / 270.0f;
     if (k == kKSwing) return s.swing / 0.5f;
     if (k == kKAccent) return s.accent;
@@ -557,9 +557,9 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 - (void) setKnob: (int) k value: (float) v
 {
     v = clampf (v, 0.0f, 1.0f);
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     e.lock();
-    Song& s = e.song();
+    tbdm::Song& s = e.song();
     if (k == kKTempo) s.tempo = (float) (std::floor ((30.0f + 270.0f * v) * 10.0f + 0.5f) / 10.0f);
     else if (k == kKSwing) s.swing = 0.5f * v;
     else if (k == kKAccent) s.accent = v;
@@ -594,13 +594,13 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (const char*) padName: (int) pad
 {
-    const PadDef& d = kitDef (core->engine.song().patterns[core->engine.currentPattern()].kit).pads[pad];
+    const tbdm::PadDef& d = kitDef (core->engine.song().patterns[core->engine.currentPattern()].kit).pads[pad];
     return d.numChoices ? d.label : "---";
 }
 
 - (void) describeKnob: (int) k
 {
-    const Song& s = core->engine.song();
+    const tbdm::Song& s = core->engine.song();
     char t[128];
     const int ch = k & 15;
     if (k == kKTempo) std::snprintf (t, sizeof (t), "TEMPO   %.1f BPM", s.tempo);
@@ -728,7 +728,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) drawTopBar
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     drawButton (kPlayRect, e.isPlaying() ? "STOP" : "PLAY", e.isPlaying(), kGreen, 15.0);
     drawButton (kRecRect, "REC", e.isRecording(), kRed, 15.0);
     for (int i = 0; i < 4; ++i) drawKnob (NSMakePoint (kTopKnobX[i], kTopKnobY), kTopKnobR, [self knobValue: i]);
@@ -756,7 +756,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     for (int i = 0; i < 4; ++i) drawButton (tabRect (i), kTabNames[i], page == i, kRed, 13.0);
     if (page == kPageSteps)
     {
-        const Pattern& P = core->engine.song().patterns[core->engine.currentPattern()];
+        const tbdm::Pattern& P = core->engine.song().patterns[core->engine.currentPattern()];
         char t[32];
         std::snprintf (t, sizeof (t), "LENGTH  %d", P.length);
         drawStepper (kLengthRect, t);
@@ -769,10 +769,10 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) drawStepsPage
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     const int cp = e.currentPattern();
-    const Pattern& P = e.song().patterns[cp];
-    const KitDef& kd = kitDef (P.kit);
+    const tbdm::Pattern& P = e.song().patterns[cp];
+    const tbdm::KitDef& kd = kitDef (P.kit);
     NSColor* ink = [NSColor blackColor];
 
     // step numbers
@@ -790,7 +790,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     for (int row = 0; row < kNumTracks; ++row)
     {
         const int tr = rowTrack (row);
-        const Track& T = P.tracks[tr];
+        const tbdm::Track& T = P.tracks[tr];
         const CGFloat y = kRowY0 + row * kRowPitch;
         const bool used = tr == kAccentTrack || (kd.pads[tr].numChoices > 0 && core->kits.padAvailable (P.kit, tr));
         // name
@@ -803,7 +803,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         drawStepper (rowLenRect (row), lt);
         if (tr != kAccentTrack)
         {
-            const Channel& ch = e.song().channels[tr];
+            const tbdm::Channel& ch = e.song().channels[tr];
             drawButton (rowMuteRect (row), "M", ch.mute, kRed, 10.5);
             drawButton (rowSoloRect (row), "S", ch.solo, kYellow, 10.5);
         }
@@ -813,7 +813,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         for (int k = 0; k < kMaxSteps; ++k)
         {
             const NSRect r = cellRect (row, k);
-            const Step& s = T.steps[k];
+            const tbdm::Step& s = T.steps[k];
             const bool inTrack = k < T.length;
             NSBezierPath* p = [NSBezierPath bezierPathWithRoundedRect: r xRadius: 3 yRadius: 3];
             const bool active = inTrack && s.on;
@@ -871,12 +871,12 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) drawPadsPage
 {
-    Engine& e = core->engine;
-    const Pattern& P = e.song().patterns[e.currentPattern()];
-    const KitDef& kd = kitDef (P.kit);
+    tbdm::Engine& e = core->engine;
+    const tbdm::Pattern& P = e.song().patterns[e.currentPattern()];
+    const tbdm::KitDef& kd = kitDef (P.kit);
     for (int pad = 0; pad < kNumPads; ++pad)
     {
-        const PadDef& d = kd.pads[pad];
+        const tbdm::PadDef& d = kd.pads[pad];
         const NSRect r = padRect (pad);
         const bool used = d.numChoices > 0 && core->kits.padAvailable (P.kit, pad);
         drawText (d.numChoices ? d.label : "---", boldFont (14.0), used ? [NSColor blackColor] : rgb (130, 132, 136), NSMidX (r), r.origin.y - 14.0);
@@ -926,14 +926,14 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) drawMixerPage
 {
-    Engine& e = core->engine;
-    const Pattern& P = e.song().patterns[e.currentPattern()];
-    const KitDef& kd = kitDef (P.kit);
+    tbdm::Engine& e = core->engine;
+    const tbdm::Pattern& P = e.song().patterns[e.currentPattern()];
+    const tbdm::KitDef& kd = kitDef (P.kit);
     NSColor* ink = [NSColor blackColor];
     for (int ch = 0; ch < kNumPads; ++ch)
     {
         const CGFloat x = mixX (ch), cx = x + 52.0;
-        const Channel& c = e.song().channels[ch];
+        const tbdm::Channel& c = e.song().channels[ch];
         // strip divider
         if (ch > 0)
         {
@@ -989,8 +989,8 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) drawSongPage
 {
-    Engine& e = core->engine;
-    const Song& s = e.song();
+    tbdm::Engine& e = core->engine;
+    const tbdm::Song& s = e.song();
     NSColor* ink = [NSColor blackColor];
     const bool songPlaying = e.isPlaying() && e.songMode();
     for (int i = 0; i < kMaxSong; ++i)
@@ -1019,7 +1019,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
             drawText (n, boldFont (20.0), tc, r.origin.x + 10.0, r.origin.y + 18.0, 0.0);
             std::snprintf (n, sizeof (n), "x%d", s.entries[i].repeats);
             drawText (n, boldFont (13.0), tc, NSMaxX (r) - 10.0, r.origin.y + 18.0, 1.0);
-            const Pattern& P = s.patterns[s.entries[i].pattern];
+            const tbdm::Pattern& P = s.patterns[s.entries[i].pattern];
             char sub[64];
             std::snprintf (sub, sizeof (sub), "%s  %s", kitDef (P.kit).name, P.name);
             drawText (sub, plainFont (fitSize (sub, 10.0, r.size.width - 16.0, false)), tc, r.origin.x + 8.0, NSMaxY (r) - 12.0, 0.0);
@@ -1068,7 +1068,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 
 - (void) drawStrip
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     const int cp = e.currentPattern();
     const int q = e.queuedPattern();
     const bool blinkOn = std::fmod ([NSDate timeIntervalSinceReferenceDate], 0.5) < 0.25;
@@ -1109,7 +1109,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     if (messageUntil > [NSDate timeIntervalSinceReferenceDate]) std::snprintf (text, sizeof (text), "%s", message);
     else if (showPatternInReadout || ! readout[0])
     {
-        const Pattern& P = e.song().patterns[cp];
+        const tbdm::Pattern& P = e.song().patterns[cp];
         if (P.name[0]) std::snprintf (text, sizeof (text), "%d   %s", cp + 1, P.name);
         else std::snprintf (text, sizeof (text), "PATTERN %d   %s KIT", cp + 1, kitDef (P.kit).name);
     }
@@ -1213,7 +1213,7 @@ static std::string cleanName (const char* s)
     {
         const std::string nm = cleanName ([[nameField stringValue] UTF8String]);
         core->engine.lock();
-        Pattern& P = core->engine.song().patterns[slot];
+        tbdm::Pattern& P = core->engine.song().patterns[slot];
         std::memset (P.name, 0, sizeof (P.name));
         std::memcpy (P.name, nm.c_str(), nm.size() < 40 ? nm.size() : 40);
         core->engine.unlock();
@@ -1244,7 +1244,7 @@ static std::string cleanName (const char* s)
 
 - (void) togglePlay
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     if (e.externalSync())
     {
         [self showMessage: "SYNC IS ON MIDI: START AND STOP FROM THE DAW"];
@@ -1259,7 +1259,7 @@ static std::string cleanName (const char* s)
 
 - (void) selectPatternSlot: (int) i
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     if (e.songMode() && e.isPlaying())
     {
         [self showMessage: "SONG MODE: THE SONG CHOOSES THE PATTERNS"];
@@ -1283,7 +1283,7 @@ static std::string cleanName (const char* s)
 
 - (void) setKit: (int) k
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     if (core->kits.samplesLoaded (k) == 0)
     {
         char t[128];
@@ -1301,15 +1301,15 @@ static std::string cleanName (const char* s)
 
 - (void) stepClick: (int) row step: (int) k
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     const int cp = e.currentPattern();
     const int tr = rowTrack (row);
     e.lock();
-    Pattern& P = e.song().patterns[cp];
-    Track& T = P.tracks[tr];
+    tbdm::Pattern& P = e.song().patterns[cp];
+    tbdm::Track& T = P.tracks[tr];
     if (k >= T.length) { T.length = k + 1; }       // clicking past the end lengthens the track
-    Step& s = T.steps[k];
-    const KitDef& kd = kitDef (P.kit);
+    tbdm::Step& s = T.steps[k];
+    const tbdm::KitDef& kd = kitDef (P.kit);
     char t[128];
     t[0] = 0;
     const char* nm = tr == kAccentTrack ? "ACCENT" : kd.pads[tr].label;
@@ -1370,14 +1370,14 @@ static std::string cleanName (const char* s)
         r.size.height += 12.0;
         r.size.width += 3.0;
         if (! inRect (p, r)) continue;
-        Engine& e = core->engine;
+        tbdm::Engine& e = core->engine;
         e.lock();
-        Pattern& P = e.song().patterns[e.currentPattern()];
+        tbdm::Pattern& P = e.song().patterns[e.currentPattern()];
         const int tr = rowTrack (paintRow);
-        Track& T = P.tracks[tr];
+        tbdm::Track& T = P.tracks[tr];
         if (k < T.length)
         {
-            Step& s = T.steps[k];
+            tbdm::Step& s = T.steps[k];
             if ((s.on != 0) != paintOn)
             {
                 s.on = paintOn;
@@ -1398,8 +1398,8 @@ static std::string cleanName (const char* s)
 
 - (void) songAction: (NSPoint) p
 {
-    Engine& e = core->engine;
-    Song& s = e.song();
+    tbdm::Engine& e = core->engine;
+    tbdm::Song& s = e.song();
     const NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
     char t[96];
     t[0] = 0;
@@ -1448,13 +1448,13 @@ static std::string cleanName (const char* s)
     }
     else if (selEntry < s.numEntries && stepperSide (kSongPattern, p))
     {
-        SongEntry& en = s.entries[selEntry];
+        tbdm::SongEntry& en = s.entries[selEntry];
         en.pattern = (en.pattern + stepperSide (kSongPattern, p) + kNumPatterns) % kNumPatterns;
         std::snprintf (t, sizeof (t), "SONG %d   PATTERN %d", selEntry + 1, en.pattern + 1);
     }
     else if (selEntry < s.numEntries && stepperSide (kSongRepeats, p))
     {
-        SongEntry& en = s.entries[selEntry];
+        tbdm::SongEntry& en = s.entries[selEntry];
         en.repeats = clampi (en.repeats + stepperSide (kSongRepeats, p), 1, 16);
         std::snprintf (t, sizeof (t), "SONG %d   PLAYS %d TIME%s", selEntry + 1, en.repeats, en.repeats > 1 ? "S" : "");
     }
@@ -1487,7 +1487,7 @@ static std::string cleanName (const char* s)
 
 - (void) patternButton: (int) i
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     const int cp = e.currentPattern();
     char t[96];
     if (i == 0) { [self startNamingPattern]; return; }
@@ -1535,9 +1535,9 @@ static std::string cleanName (const char* s)
 
 // Which range: the whole song or the current pattern (times n). Test mode skips
 // the questions and the save panel.
-- (BOOL) askRange: (ExportRange&) r path: (std::string&) path type: (NSString*) ext title: (NSString*) title
+- (BOOL) askRange: (tbdm::ExportRange&) r path: (std::string&) path type: (NSString*) ext title: (NSString*) title
 {
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     r.wholeSong = false;
     r.pattern = e.currentPattern();
     r.loops = 1;
@@ -1569,7 +1569,7 @@ static std::string cleanName (const char* s)
     NSSavePanel* sp = [NSSavePanel savePanel];
     [sp setAllowedFileTypes: [NSArray arrayWithObject: ext]];
     [sp setTitle: title];
-    const Pattern& P = e.song().patterns[r.pattern];
+    const tbdm::Pattern& P = e.song().patterns[r.pattern];
     NSString* base = r.wholeSong ? @"TB Drum Machine Song"
                                  : (P.name[0] ? str (P.name) : [NSString stringWithFormat: @"TB Drum Machine Pattern %d", r.pattern + 1]);
     [sp setNameFieldStringValue: [base stringByAppendingPathExtension: ext]];
@@ -1584,7 +1584,7 @@ static std::string cleanName (const char* s)
     ExportRange r;
     std::string path;
     if (! [self askRange: r path: path type: @"wav" title: @"Export WAV"]) return;
-    Song copy;
+    tbdm::Song copy;
     core->engine.lock();
     copy = core->engine.song();
     core->engine.unlock();
@@ -1604,7 +1604,7 @@ static std::string cleanName (const char* s)
     ExportRange r;
     std::string path;
     if (! [self askRange: r path: path type: @"mid" title: @"Export MIDI"]) return;
-    Song copy;
+    tbdm::Song copy;
     core->engine.lock();
     copy = core->engine.song();
     core->engine.unlock();
@@ -1625,7 +1625,7 @@ static std::string cleanName (const char* s)
     if (nameField) [self finishNaming: YES];
     [[self window] makeFirstResponder: self];
     const NSPoint p = [self convertPoint: [ev locationInWindow] fromView: nil];
-    Engine& e = core->engine;
+    tbdm::Engine& e = core->engine;
     dragKind = 0;
     paintRow = -1;
 
@@ -1683,7 +1683,7 @@ static std::string cleanName (const char* s)
         if (stepperSide (kLengthRect, p))
         {
             e.lock();
-            Pattern& P = e.song().patterns[e.currentPattern()];
+            tbdm::Pattern& P = e.song().patterns[e.currentPattern()];
             const int old = P.length;
             P.length = clampi (P.length + stepperSide (kLengthRect, p), 1, kMaxSteps);
             // tracks that ran the full old length follow the pattern
@@ -1712,7 +1712,7 @@ static std::string cleanName (const char* s)
             if (tr != kAccentTrack && inRect (p, rowChoiceRect (row)) && kitDef (e.song().patterns[e.currentPattern()].kit).pads[tr].numChoices == 2)
             {
                 rowChoice[tr] = p.x >= NSMidX (rowChoiceRect (row)) ? 1 : 0;
-                const PadDef& d = kitDef (e.song().patterns[e.currentPattern()].kit).pads[tr];
+                const tbdm::PadDef& d = kitDef (e.song().patterns[e.currentPattern()].kit).pads[tr];
                 char t[96];
                 std::snprintf (t, sizeof (t), "%s   NEW STEPS PLAY %s", d.label, d.choiceLabel[rowChoice[tr]]);
                 [self setReadout: t];
@@ -1725,7 +1725,7 @@ static std::string cleanName (const char* s)
             if (stepperSide (rowLenRect (row), p))
             {
                 e.lock();
-                Track& T = e.song().patterns[e.currentPattern()].tracks[tr];
+                tbdm::Track& T = e.song().patterns[e.currentPattern()].tracks[tr];
                 T.length = clampi (T.length + stepperSide (rowLenRect (row), p), 1, kMaxSteps);
                 e.unlock();
                 char t[64];
@@ -1737,7 +1737,7 @@ static std::string cleanName (const char* s)
             if (tr != kAccentTrack && (inRect (p, rowMuteRect (row)) || inRect (p, rowSoloRect (row))))
             {
                 e.lock();
-                Channel& c = e.song().channels[tr];
+                tbdm::Channel& c = e.song().channels[tr];
                 if (inRect (p, rowMuteRect (row))) c.mute = ! c.mute;
                 else c.solo = ! c.solo;
                 e.unlock();
@@ -1758,7 +1758,7 @@ static std::string cleanName (const char* s)
     }
     else if (page == kPagePads)
     {
-        const KitDef& kd = kitDef (e.song().patterns[e.currentPattern()].kit);
+        const tbdm::KitDef& kd = kitDef (e.song().patterns[e.currentPattern()].kit);
         for (int pad = 0; pad < kNumPads; ++pad)
         {
             for (int i = 0; i < 3; ++i)
@@ -1790,7 +1790,7 @@ static std::string cleanName (const char* s)
             if (inRect (p, mixMuteRect (ch)) || inRect (p, mixSoloRect (ch)))
             {
                 e.lock();
-                Channel& c = e.song().channels[ch];
+                tbdm::Channel& c = e.song().channels[ch];
                 if (inRect (p, mixMuteRect (ch))) c.mute = ! c.mute;
                 else c.solo = ! c.solo;
                 e.unlock();

@@ -221,9 +221,9 @@ static float* testTone (int frames, double freq, double fs, double decay)
     return d;
 }
 
-static void setStep (Pattern& P, int t, int k, int choice = 0, int flam = 0, int sub = 1)
+static void setStep (tbdm::Pattern& P, int t, int k, int choice = 0, int flam = 0, int sub = 1)
 {
-    Step& s = P.tracks[t].steps[k];
+    tbdm::Step& s = P.tracks[t].steps[k];
     s.on = 1;
     s.choice = (unsigned char) choice;
     s.flam = (unsigned char) flam;
@@ -231,13 +231,13 @@ static void setStep (Pattern& P, int t, int k, int choice = 0, int flam = 0, int
 }
 
 // First run: a groove in each kit (patterns 1-3)
-static void makeDemo (Song& s)
+static void makeDemo (tbdm::Song& s)
 {
     s.setDefaults();
     const char* names[3] = { "707 GROOVE", "CR-78 GROOVE", "LM-1 GROOVE" };
     for (int k = 0; k < 3; ++k)
     {
-        Pattern& P = s.patterns[k];
+        tbdm::Pattern& P = s.patterns[k];
         P.kit = k;
         std::strcpy (P.name, names[k]);
         setStep (P, 0, 0); setStep (P, 0, 6); setStep (P, 0, 10);
@@ -374,7 +374,7 @@ static void loadKits (AppCore* c)
 
 - (SessionState) stateNow
 {
-    SessionState st;
+    tbdm::SessionState st;
     st.currentPattern = gCore->engine.currentPattern();
     st.songMode = gCore->engine.songMode();
     st.externalSync = gCore->engine.externalSync();
@@ -382,9 +382,9 @@ static void loadKits (AppCore* c)
     return st;
 }
 
-- (void) applyState: (const SessionState&) st
+- (void) applyState: (const tbdm::SessionState&) st
 {
-    Engine& e = gCore->engine;
+    tbdm::Engine& e = gCore->engine;
     e.stop();
     e.setExternalSync (st.externalSync);
     e.setSongMode (false);
@@ -395,7 +395,7 @@ static void loadKits (AppCore* c)
 
 - (void) saveNow
 {
-    Song copy;
+    tbdm::Song copy;
     gCore->engine.lock();
     copy = gCore->engine.song();
     gCore->engine.unlock();
@@ -420,7 +420,7 @@ static void loadKits (AppCore* c)
     if ([a runModal] != NSAlertFirstButtonReturn) return;
     gCore->engine.lock();
     makeDemo (gCore->engine.song());
-    SessionState st;
+    tbdm::SessionState st;
     [self applyState: st];
     gCore->engine.unlock();
     gCore->dirty = true;
@@ -434,8 +434,8 @@ static void loadKits (AppCore* c)
     NSOpenPanel* op = [NSOpenPanel openPanel];
     [op setAllowedFileTypes: [NSArray arrayWithObjects: @"tbdm", @"txt", nil]];
     if ([op runModal] != NSFileHandlingPanelOKButton) return;
-    Song song;
-    SessionState st;
+    tbdm::Song song;
+    tbdm::SessionState st;
     if (! loadSession ([[[op URL] path] UTF8String], song, st))
     {
         [view showMessage: "THAT ISN'T A TB DRUM MACHINE SESSION"];
@@ -458,7 +458,7 @@ static void loadKits (AppCore* c)
     [sp setAllowedFileTypes: [NSArray arrayWithObject: @"tbdm"]];
     [sp setNameFieldStringValue: @"My Drum Session.tbdm"];
     if ([sp runModal] != NSFileHandlingPanelOKButton) return;
-    Song copy;
+    tbdm::Song copy;
     gCore->engine.lock();
     copy = gCore->engine.song();
     gCore->engine.unlock();
@@ -505,8 +505,8 @@ static void loadKits (AppCore* c)
     if (! gCore->testMode) [self buildMenus];
 
     // the session from last time, or the demo grooves on first run
-    Song song;
-    SessionState st;
+    tbdm::Song song;
+    tbdm::SessionState st;
     if (! loadSession (gCore->sessionPath.c_str(), song, st))
     {
         makeDemo (song);
@@ -633,7 +633,7 @@ static void loadKits (AppCore* c)
 
 - (void) runSelfTest
 {
-    Engine& e = gCore->engine;
+    tbdm::Engine& e = gCore->engine;
     e.setSampleRate (44100.0);
     std::printf ("Panel self-test\n");
     [view setPage: kPageSteps];
@@ -750,8 +750,8 @@ static void loadKits (AppCore* c)
 
     // session save and reopen
     [self saveNow];
-    Song back;
-    SessionState st;
+    tbdm::Song back;
+    tbdm::SessionState st;
     [self check: loadSession (gCore->sessionPath.c_str(), back, st) && std::strcmp (back.patterns[0].name, "Friday night 707 groove") == 0
                  && back.numEntries == 2 && st.page == kPageSteps
            what: "session saved and reopened"];
