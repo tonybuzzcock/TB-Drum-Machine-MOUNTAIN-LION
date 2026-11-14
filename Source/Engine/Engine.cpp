@@ -258,6 +258,7 @@ void Song::setDefaults()
     swing = 0.0f;
     accent = 0.5f;
     master = 0.8f;
+    std::memset (name, 0, sizeof (name));
 }
 
 double stepStart (int k, int L, double swing)

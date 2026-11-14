@@ -1806,30 +1806,56 @@ static std::string cleanName (const char* s)
     [a addButtonWithTitle: [NSString stringWithFormat: @"Pattern %d", e.currentPattern() + 1]];
     [a addButtonWithTitle: @"Cancel"];
 
-    const CGFloat rowH = 30.0;
-    const int rows = audio ? 3 : 1;
-    NSView* acc = [[[NSView alloc] initWithFrame: NSMakeRect (0, 0, 260, rows * rowH)] autorelease];
-    NSPopUpButton* times = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, (rows - 1) * rowH, 260, 26) pullsDown: NO] autorelease];
+    // names (the song's and the pattern's) and the export choices
+    const bool hasSong = e.song().numEntries > 0;
+    const CGFloat rowH = 30.0, wAcc = 320.0, labW = 100.0;
+    const int rows = (hasSong ? 1 : 0) + 1 + 1 + (audio ? 2 : 0);
+    NSView* acc = [[[NSView alloc] initWithFrame: NSMakeRect (0, 0, wAcc, rows * rowH)] autorelease];
+    int row = rows - 1;
+    NSTextField* songName = nil;
+    NSTextField* patName = nil;
+    const tbdm::Pattern& P0 = e.song().patterns[r.pattern];
+    for (int which = 0; which < 2; ++which)
+    {
+        if (which == 0 && ! hasSong) continue;
+        NSTextField* lab = [[[NSTextField alloc] initWithFrame: NSMakeRect (0, row * rowH + 3, labW, 20)] autorelease];
+        [lab setStringValue: which == 0 ? @"Song name:" : [NSString stringWithFormat: @"Pattern %d name:", r.pattern + 1]];
+        [lab setBezeled: NO];
+        [lab setDrawsBackground: NO];
+        [lab setEditable: NO];
+        [lab setSelectable: NO];
+        [lab setAlignment: NSRightTextAlignment];
+        [acc addSubview: lab];
+        NSTextField* f = [[[NSTextField alloc] initWithFrame: NSMakeRect (labW + 6, row * rowH + 2, wAcc - labW - 6, 22)] autorelease];
+        [f setStringValue: which == 0 ? str (e.song().name[0] ? e.song().name : "TB Drum Machine Song")
+                                      : (P0.name[0] ? str (P0.name) : [NSString stringWithFormat: @"TB Drum Machine Pattern %d", r.pattern + 1])];
+        [acc addSubview: f];
+        if (which == 0) songName = f; else patName = f;
+        --row;
+    }
+    NSPopUpButton* times = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, row * rowH, wAcc, 26) pullsDown: NO] autorelease];
     const int counts[6] = { 1, 2, 4, 8, 16, 32 };
     for (int i = 0; i < 6; ++i) [times addItemWithTitle: [NSString stringWithFormat: @"Pattern %d time%s", counts[i], counts[i] > 1 ? "s" : ""]];
     [acc addSubview: times];
+    --row;
     NSPopUpButton* what = nil;
     NSPopUpButton* rates = nil;
     if (audio)
     {
-        what = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, rowH, 260, 26) pullsDown: NO] autorelease];
+        what = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, row * rowH, wAcc, 26) pullsDown: NO] autorelease];
         [what addItemWithTitle: @"Stereo mix (one stereo WAV)"];
         [what addItemWithTitle: @"Separate tracks (one mono WAV per pad)"];
         [what addItemWithTitle: @"Both: stereo mix and separate tracks"];
         [acc addSubview: what];
-        rates = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, 0, 260, 26) pullsDown: NO] autorelease];
+        --row;
+        rates = [[[NSPopUpButton alloc] initWithFrame: NSMakeRect (0, row * rowH, wAcc, 26) pullsDown: NO] autorelease];
         [rates addItemWithTitle: @"44.1 kHz, 24-bit"];
         [rates addItemWithTitle: @"48 kHz, 24-bit"];
         [acc addSubview: rates];
     }
     [a setAccessoryView: acc];
+    [[a window] setInitialFirstResponder: songName ? songName : patName];
     const NSInteger b = [a runModal];
-    const bool hasSong = e.song().numEntries > 0;
     if (hasSong && b == NSAlertFirstButtonReturn) r.wholeSong = true;
     else if ((hasSong && b == NSAlertSecondButtonReturn) || (! hasSong && b == NSAlertFirstButtonReturn))
         r.loops = counts[clampi ((int) [times indexOfSelectedItem], 0, 5)];
@@ -1839,15 +1865,33 @@ static std::string cleanName (const char* s)
         mode = clampi ((int) [what indexOfSelectedItem], 0, 2);
         rate = [rates indexOfSelectedItem] == 1 ? 48000 : 44100;
     }
+    // keep the names: the song's for next time, the pattern's as its name on the panel
+    e.lock();
+    if (songName)
+    {
+        const std::string nm = cleanName ([[songName stringValue] UTF8String]);
+        std::memset (e.song().name, 0, sizeof (e.song().name));
+        std::memcpy (e.song().name, nm.c_str(), nm.size() < 40 ? nm.size() : 40);
+    }
+    if (patName && ! r.wholeSong)
+    {
+        const std::string nm = cleanName ([[patName stringValue] UTF8String]);
+        tbdm::Pattern& Pn = e.song().patterns[r.pattern];
+        std::memset (Pn.name, 0, sizeof (Pn.name));
+        std::memcpy (Pn.name, nm.c_str(), nm.size() < 40 ? nm.size() : 40);
+    }
+    e.unlock();
+    core->dirty = true;
+    std::string chosen = cleanName ([[(r.wholeSong ? songName : patName) stringValue] UTF8String]);
+    if (chosen.empty()) chosen = r.wholeSong ? "TB Drum Machine Song" : "TB Drum Machine Pattern";
+    for (size_t i = 0; i < chosen.size(); ++i) if (chosen[i] == '/' || chosen[i] == ':') chosen[i] = '-';
 
     NSSavePanel* sp = [NSSavePanel savePanel];
     [sp setAllowedFileTypes: [NSArray arrayWithObject: ext]];
     [sp setTitle: title];
-    if (audio && mode == 1) [sp setMessage: @"The tracks go in a folder named after this file."];
-    const tbdm::Pattern& P = e.song().patterns[r.pattern];
-    NSString* base = r.wholeSong ? @"TB Drum Machine Song"
-                                 : (P.name[0] ? str (P.name) : [NSString stringWithFormat: @"TB Drum Machine Pattern %d", r.pattern + 1]);
-    [sp setNameFieldStringValue: [base stringByAppendingPathExtension: ext]];
+    if (audio && mode == 1) [sp setMessage: @"The mono tracks go in a folder with this name."];
+    else if (audio && mode == 2) [sp setMessage: @"The stereo mix gets this name; the mono tracks go in a folder with the same name."];
+    [sp setNameFieldStringValue: [str (chosen.c_str()) stringByAppendingPathExtension: ext]];
     if ([sp runModal] != NSFileHandlingPanelOKButton) return NO;
     path = [[[sp URL] path] UTF8String];
     return YES;
@@ -1875,10 +1919,9 @@ static std::string cleanName (const char* s)
     if (mode == 0 || mode == 2) ok = tbdm::exportWav (path.c_str(), copy, core->kits, r, rate, 4.0, &frames);
     if (ok && (mode == 1 || mode == 2))
     {
-        // "My Song.wav" -> folder "My Song Tracks" beside it
+        // "My Song.wav" -> the mono tracks in a folder "My Song" beside it
         std::string dir = path;
         if (dir.size() > 4 && dir.compare (dir.size() - 4, 4, ".wav") == 0) dir.erase (dir.size() - 4);
-        dir += " Tracks";
         [[NSFileManager defaultManager] createDirectoryAtPath: str (dir.c_str()) withIntermediateDirectories: YES attributes: nil error: nil];
         int order[kNumPads];
         for (int i = 0; i < kNumPads; ++i) order[i] = padAt (i);

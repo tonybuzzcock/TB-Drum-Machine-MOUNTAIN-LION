@@ -58,6 +58,7 @@ bool saveSession (const char* path, const Song& s, const SessionState& st)
     if (! f) return false;
     std::fprintf (f, "TB Drum Machine 2\n");
     std::fprintf (f, "tempo %.3f\nswing %.4f\naccent %.4f\nmaster %.4f\n", s.tempo, s.swing, s.accent, s.master);
+    std::fprintf (f, "songname %s\n", s.name);
     std::fprintf (f, "current %d\nsongmode %d\nsync %d\npage %d\n", st.currentPattern, st.songMode ? 1 : 0,
                   st.externalSync ? 1 : 0, st.page);
     for (int c = 0; c < kNumPads; ++c)
@@ -143,6 +144,13 @@ bool loadSession (const char* path, Song& out, SessionState& st)
                 s.patterns[curP].kit = clampi (j, 0, kNumKits - 1);
                 s.patterns[curP].length = clampi (k, 1, kMaxSteps);
             }
+        }
+        else if (std::strncmp (line, "songname ", 9) == 0)
+        {
+            std::memset (s.name, 0, kNameLen);
+            size_t len = std::strlen (line + 9);
+            if (len > 40) len = 40;
+            std::memcpy (s.name, line + 9, len);
         }
         else if (std::strncmp (line, "name ", 5) == 0 && curP >= 0)
         {

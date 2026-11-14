@@ -79,7 +79,7 @@ Knobs: drag up and down (hold Shift for fine changes), double-click to reset, or
   **both**. Only the overall mix is stereo. Separate tracks are one **mono** WAV per pad that plays
   (`01 KICK.wav`, `02 SNARE.wav`… in panel order), each with its own level, tune and decay (pan is
   left to the DAW), and all the full length of the mix so they
-  line up from bar 1 in a DAW. They go in a folder named after the file (`My Song Tracks`). Muted
+  line up from bar 1 in a DAW. The pop-up asks for the song's and the pattern's names. The name you choose names the stereo mix (`My Song.wav`) and the folder of mono tracks (`My Song`). The song name is kept with the session; the pattern name becomes the pattern's name. Muted
   pads still get a track. The last hits' tail is included.
 - **EXPORT MIDI**: the same choice as a Standard MIDI File (type 0, 96 PPQN, channel 10,
   GM drum notes). Accents are velocity 127, other hits 100, and the tempo is included.

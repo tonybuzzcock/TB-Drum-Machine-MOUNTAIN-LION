@@ -135,6 +135,7 @@ struct Song
     float swing;            // 0..0.5 of a step (50%..75% shuffle)
     float accent;           // 0..1 accent amount
     float master;           // 0..1 master volume
+    char name[kNameLen];    // song name for exports (up to 40 characters)
     void setDefaults();
 };
 

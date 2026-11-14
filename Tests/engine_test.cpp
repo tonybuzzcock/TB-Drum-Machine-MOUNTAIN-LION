@@ -298,6 +298,7 @@ int main (int argc, char** argv)
         s.channels[3].tune = -5.0f;
         s.channels[7].mute = true;
         std::strcpy (s.patterns[5].name, "A forty character name for the readout!!");
+        std::strcpy (s.name, "Saturday Night Song");
         s.patterns[5].kit = kKitLM1;
         s.patterns[5].length = 24;
         s.patterns[5].tracks[2].length = 7;
@@ -318,7 +319,7 @@ int main (int argc, char** argv)
         bool same = std::memcmp (s.patterns, t.patterns, sizeof (s.patterns)) == 0;
         same = same && t.tempo == s.tempo && t.numEntries == 3 && t.entries[2].pattern == 5 && t.entries[2].repeats == 4;
         same = same && std::fabs (t.channels[3].tune + 5.0f) < 1e-4f && t.channels[7].mute && std::fabs (t.swing - 0.125f) < 1e-4f;
-        same = same && st2.currentPattern == 5 && st2.songMode && st2.page == 2;
+        same = same && std::strcmp (t.name, "Saturday Night Song") == 0 && st2.currentPattern == 5 && st2.songMode && st2.page == 2;
         check (same, "everything comes back the same");
         bool codes = true;
         for (int ch = 0; ch < 2; ++ch)

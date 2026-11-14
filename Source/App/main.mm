@@ -751,7 +751,7 @@ static void loadKits (AppCore* c)
     NSDictionary* wa = [fm attributesOfItemAtPath: [NSString stringWithUTF8String: (testDir + "/song.wav").c_str()] error: nil];
     NSDictionary* ma = [fm attributesOfItemAtPath: [NSString stringWithUTF8String: (testDir + "/song.mid").c_str()] error: nil];
     [self check: wa && [wa fileSize] > 100000 what: "EXPORT AUDIO wrote the stereo mix"];
-    NSArray* tracks = [fm contentsOfDirectoryAtPath: [NSString stringWithUTF8String: (testDir + "/song Tracks").c_str()] error: nil];
+    NSArray* tracks = [fm contentsOfDirectoryAtPath: [NSString stringWithUTF8String: (testDir + "/song").c_str()] error: nil];
     [self check: [tracks count] >= 3 && [tracks containsObject: @"01 KICK.wav"] what: "...and the separate tracks, 01 KICK.wav first"];
     float* d = 0; int nf = 0; double sr = 0;
     [self check: tbdm::readWav ((testDir + "/song.wav").c_str(), d, nf, sr) && sr == 48000.0 what: "...at 48 kHz"];
