@@ -947,7 +947,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     tbdm::Engine& e = core->engine;
     drawButton (kPlayRect, e.isPlaying() ? "STOP" : "PLAY", e.isPlaying(), kOrange, 15.0);
     drawButton (kRecRect, "REC", e.isRecording(), kRed, 15.0);
-    const int caps[4] = { kCapRed, kCapDark, kCapDark, kCapCream };
+    const int caps[4] = { kCapCream, kCapDark, kCapDark, kCapRed };
     for (int i = 0; i < 4; ++i) drawKnob (NSMakePoint (kTopKnobX[i], kTopKnobY), kTopKnobR, [self knobValue: i], caps[i]);
     char t[32];
     if (e.externalSync())
