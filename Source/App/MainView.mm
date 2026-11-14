@@ -50,8 +50,10 @@ inline NSRect rowChoiceRect (int row) { return NSMakeRect (140.0, kRowY0 + row *
 inline NSRect rowLenRect (int row) { return NSMakeRect (240.0, kRowY0 + row * kRowPitch + 8.0, 58.0, 24.0); }
 inline NSRect rowMuteRect (int row) { return NSMakeRect (303.0, kRowY0 + row * kRowPitch + 8.0, 22.0, 24.0); }
 inline NSRect rowSoloRect (int row) { return NSMakeRect (328.0, kRowY0 + row * kRowPitch + 8.0, 22.0, 24.0); }
-// rows: 0 = accent, 1..10 = pads 0..9
-inline int rowTrack (int row) { return row == 0 ? kAccentTrack : row - 1; }
+// rows top to bottom (the user's order): Accent, Kick, Snare, Hi-Hat, Hi Tom,
+// Mid Tom, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
+const int kRowOrder[kNumTracks] = { kAccentTrack, 0, 1, 7, 4, 3, 2, 8, 9, 6, 5 };
+inline int rowTrack (int row) { return kRowOrder[row]; }
 
 // Pads page
 inline NSRect padRect (int pad) { return NSMakeRect (40.0 + (pad % 5) * 224.0, (pad < 5 ? 194.0 : 428.0), 196.0, 146.0); }

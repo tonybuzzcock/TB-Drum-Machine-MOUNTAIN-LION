@@ -642,8 +642,8 @@ static void loadKits (AppCore* c)
     // steps: kick (row 1) step 3 on, then off by painting
     [self click: [view rectForStep: 2 row: 1]];
     [self check: e.song().patterns[0].tracks[0].steps[2].on == 1 what: "click a step: on"];
-    [self drag: NSMakePoint (NSMidX ([view rectForStep: 1 row: 9]), NSMidY ([view rectForStep: 1 row: 9]))
-            to: NSMakePoint (NSMidX ([view rectForStep: 5 row: 9]), NSMidY ([view rectForStep: 5 row: 9]))];
+    [self drag: NSMakePoint (NSMidX ([view rectForStep: 1 row: 7]), NSMidY ([view rectForStep: 1 row: 7]))
+            to: NSMakePoint (NSMidX ([view rectForStep: 5 row: 7]), NSMidY ([view rectForStep: 5 row: 7]))];
     bool painted = true;
     for (int k = 1; k <= 5; ++k) painted = painted && e.song().patterns[0].tracks[8].steps[k].on;
     [self check: painted what: "drag paints steps 2-6 on the crash row"];
