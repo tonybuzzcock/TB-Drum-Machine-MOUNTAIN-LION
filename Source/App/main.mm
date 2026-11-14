@@ -691,6 +691,10 @@ static void loadKits (AppCore* c)
     [self check: e.hitLogCount() == 2 && lg[1].pad == 7 && lg[1].choice == 0 what: "left half of HI-HAT plays closed"];
     e.setHitLog (0, 0);
     [self click: [view rectForKit: 1]];
+    [self check: NSMinX ([view rectForPad: 4 half: -1]) == kPanelFrame + 42.0 + 3 * 186.0
+                 && NSMinX ([view rectForPad: 2 half: -1]) == kPanelFrame + 42.0 + 4 * 186.0
+                 && NSMinX ([view rectForPad: 6 half: -1]) == kPanelFrame + 42.0 + 5 * 186.0
+           what: "CR-78: BONGO, CONGA, CABASSA together, empty pads last"];
     [self shot: "pads_cr78"];
     [self click: [view rectForKit: 0]];
 

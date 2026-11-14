@@ -44,10 +44,18 @@ inline NSRect modeRect (int i) { return NSMakeRect (770.0 + i * 98.0, kTabY, 90.
 
 // Every page shows the pads in the user's order: Kick, Snare, Hi-Hat, Hi Tom,
 // Mid Tom (1), Mid Tom 2, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
-const int kPadOrder[kNumPads] = { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 };
+// The CR-78 has its sounds first and its empty pads at the end: Kick, Snare,
+// Hi-Hat, Bongo, Conga, Cabassa, then the unused pads.
+const int kPadOrderKit[kNumKits][kNumPads] = {
+    { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 },     // 707
+    { 0, 1, 7, 4, 2, 6, 3, 10, 8, 9, 5 },     // CR-78
+    { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 }      // LM-1
+};
+int gOrderKit = 0;     // kit of the pattern on show; set before drawing and hit-testing
+inline int padAt (int i) { return kPadOrderKit[gOrderKit < 0 || gOrderKit >= kNumKits ? 0 : gOrderKit][i]; }
 inline int padPos (int pad)
 {
-    for (int i = 0; i < kNumPads; ++i) if (kPadOrder[i] == pad) return i;
+    for (int i = 0; i < kNumPads; ++i) if (padAt (i) == pad) return i;
     return pad;
 }
 
@@ -62,7 +70,7 @@ inline NSRect rowMuteRect (int row) { return NSMakeRect (303.0, kRowY0 + row * k
 inline NSRect rowSoloRect (int row) { return NSMakeRect (328.0, kRowY0 + row * kRowPitch + 6.0, 22.0, 24.0); }
 // rows top to bottom (the user's order): Accent, Kick, Snare, Hi-Hat, Hi Tom,
 // Mid Tom 1, Mid Tom 2, Low Tom, Crash, Ride, Clap/Tamb, Rim/Cow
-inline int rowTrack (int row) { return row == 0 ? kAccentTrack : kPadOrder[row - 1]; }
+inline int rowTrack (int row) { return row == 0 ? kAccentTrack : padAt (row - 1); }
 
 // Pads page
 inline NSRect padRect (int pad)
@@ -655,6 +663,11 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 {
     [self shutdown];
     [super dealloc];
+}
+
+- (void) syncOrder
+{
+    if (core) gOrderKit = core->engine.song().patterns[core->engine.currentPattern()].kit;
 }
 
 - (BOOL) isFlipped { return YES; }
@@ -1341,6 +1354,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
 {
     (void) dirty;
     if (! core) return;
+    [self syncOrder];
     [[self backdropImage] drawInRect: [self bounds] fromRect: NSZeroRect operation: NSCompositeCopy fraction: 1.0 respectFlipped: YES hints: nil];
     [NSGraphicsContext saveGraphicsState];
     NSAffineTransform* tr = [NSAffineTransform transform];
@@ -1846,6 +1860,7 @@ static std::string cleanName (const char* s)
     if (! core) return;
     if (nameField) [self finishNaming: YES];
     [[self window] makeFirstResponder: self];
+    [self syncOrder];
     const NSPoint p = viewToFace ([self convertPoint: [ev locationInWindow] fromView: nil]);
     tbdm::Engine& e = core->engine;
     dragKind = 0;
@@ -2031,6 +2046,7 @@ static std::string cleanName (const char* s)
 - (void) mouseDragged: (NSEvent*) ev
 {
     if (! core) return;
+    [self syncOrder];
     const NSPoint p = viewToFace ([self convertPoint: [ev locationInWindow] fromView: nil]);
     if (dragKind == 1)
     {
@@ -2052,6 +2068,7 @@ static std::string cleanName (const char* s)
 - (void) scrollWheel: (NSEvent*) ev
 {
     if (! core) return;
+    [self syncOrder];
     const NSPoint p = viewToFace ([self convertPoint: [ev locationInWindow] fromView: nil]);
     const int k = [self knobAt: p];
     if (k < 0) return;
@@ -2083,9 +2100,10 @@ static std::string cleanName (const char* s)
 //------------------------------------------------------------------------------
 // Test hooks
 
-- (NSRect) rectForStep: (int) k row: (int) row { return faceToView (cellRect (row, k)); }
+- (NSRect) rectForStep: (int) k row: (int) row { [self syncOrder]; return faceToView (cellRect (row, k)); }
 - (NSRect) rectForPad: (int) pad half: (int) half
 {
+    [self syncOrder];
     const NSRect r = padRect (pad);
     if (half < 0) return faceToView (r);
     return faceToView (NSMakeRect (r.origin.x + half * r.size.width * 0.5, r.origin.y, r.size.width * 0.5, r.size.height));
