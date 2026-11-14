@@ -4,8 +4,12 @@
 
 struct AppCore;
 
-const CGFloat kViewWidth = 1180.0;
-const CGFloat kViewHeight = 780.0;
+// The face, and the mahogany frame round it (the M-50 strip's look)
+const CGFloat kPanelFrame = 24.0;
+const CGFloat kFaceWidth = 1180.0;
+const CGFloat kFaceHeight = 780.0;
+const CGFloat kViewWidth = kFaceWidth + 2 * kPanelFrame;
+const CGFloat kViewHeight = kFaceHeight + 2 * kPanelFrame;
 
 enum { kPagePads = 0, kPageSteps = 1, kPageMixer = 2, kPageSong = 3 };
 

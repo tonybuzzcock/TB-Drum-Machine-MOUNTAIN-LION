@@ -697,20 +697,20 @@ static void loadKits (AppCore* c)
     // mixer
     [self click: [view rectForTab: kPageMixer]];
     const float before = e.song().channels[0].level;
-    [self drag: NSMakePoint (24.0 + 52.0, 582.0 - 124.0 * before) to: NSMakePoint (24.0 + 52.0, 582.0 - 124.0 * before + 40.0)];
+    [self drag: NSMakePoint (kPanelFrame + 24.0 + 52.0, kPanelFrame + 582.0 - 124.0 * before) to: NSMakePoint (kPanelFrame + 24.0 + 52.0, kPanelFrame + 582.0 - 124.0 * before + 40.0)];
     [self check: e.song().channels[0].level < before - 0.2f what: "fader drag lowers the kick level"];
-    [self drag: NSMakePoint (24.0 + 114.0 * 2 + 52.0, 238.0) to: NSMakePoint (24.0 + 114.0 * 2 + 52.0, 238.0 - 50.0)];
+    [self drag: NSMakePoint (kPanelFrame + 24.0 + 114.0 * 2 + 52.0, kPanelFrame + 238.0) to: NSMakePoint (kPanelFrame + 24.0 + 114.0 * 2 + 52.0, kPanelFrame + 238.0 - 50.0)];
     [self check: e.song().channels[7].tune > 2.0f what: "tune knob drag (3rd strip: hi-hat)"];
     [self shot: "mixer"];
 
     // song
     [self click: [view rectForTab: kPageSong]];
-    [self clickAt: NSMakePoint (24.0 + 56.0, 170.0 + 26.0) flags: 0];       // + ADD at slot 1
+    [self clickAt: NSMakePoint (kPanelFrame + 24.0 + 56.0, kPanelFrame + 170.0 + 26.0) flags: 0];       // + ADD at slot 1
     [self click: [view rectForPatternSlot: 1]];
-    [self clickAt: NSMakePoint (24.0 + 118.0 + 56.0, 170.0 + 26.0) flags: 0];
-    [self clickAt: NSMakePoint (990.0 + 160.0, 444.0 + 16.0) flags: 0];       // repeats +
+    [self clickAt: NSMakePoint (kPanelFrame + 24.0 + 118.0 + 56.0, kPanelFrame + 170.0 + 26.0) flags: 0];
+    [self clickAt: NSMakePoint (kPanelFrame + 990.0 + 160.0, kPanelFrame + 444.0 + 16.0) flags: 0];       // repeats +
     [self check: e.song().numEntries == 2 && e.song().entries[1].pattern == 1 && e.song().entries[1].repeats == 2 what: "song: two steps, second plays twice"];
-    [self clickAt: NSMakePoint (990.0 + 130.0, 186.0 + 15.0) flags: 0];       // song mode ON
+    [self clickAt: NSMakePoint (kPanelFrame + 990.0 + 130.0, kPanelFrame + 186.0 + 15.0) flags: 0];       // song mode ON
     [self check: e.songMode() what: "song mode on"];
     e.lock(); e.play(); e.unlock();
     [self renderFor: 0.5];
