@@ -47,7 +47,7 @@ inline NSRect modeRect (int i) { return NSMakeRect (770.0 + i * 98.0, kTabY, 90.
 // The CR-78 has its sounds first and its empty pads at the end: Kick, Snare,
 // Hi-Hat, Bongo, Conga, Cabassa, then the unused pads.
 const int kPadOrderKit[kNumKits][kNumPads] = {
-    { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 },     // 707
+    { 0, 1, 7, 4, 3, 2, 8, 9, 6, 5, 10 },     // 707 (its unused Mid Tom 2 last)
     { 0, 1, 7, 4, 2, 6, 3, 10, 8, 9, 5 },     // CR-78
     { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 }      // LM-1
 };
