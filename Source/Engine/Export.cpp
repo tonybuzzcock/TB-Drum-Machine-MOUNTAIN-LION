@@ -56,7 +56,7 @@ bool saveSession (const char* path, const Song& s, const SessionState& st)
     std::snprintf (tmp, sizeof (tmp), "%s.tmp", path);
     FILE* f = std::fopen (tmp, "w");
     if (! f) return false;
-    std::fprintf (f, "TB Drum Machine 2\n");
+    std::fprintf (f, "TB Drum Machine 3\n");
     std::fprintf (f, "tempo %.3f\nswing %.4f\naccent %.4f\nmaster %.4f\n", s.tempo, s.swing, s.accent, s.master);
     std::fprintf (f, "songname %s\n", s.name);
     std::fprintf (f, "sidecar %.4f %.4f %.4f %.4f %.4f %.4f %d %.4f\n", s.eqFreq[0], s.eqFreq[1], s.eqFreq[2],
@@ -122,7 +122,16 @@ bool loadSession (const char* path, Song& out, SessionState& st)
         if (std::sscanf (line, "tempo %f", &a) == 1) s.tempo = clampf (a, 30.0f, 300.0f);
         else if (std::sscanf (line, "swing %f", &a) == 1) s.swing = clampf (a, 0.0f, 0.5f);
         else if (std::sscanf (line, "accent %f", &a) == 1) s.accent = clampf (a, 0.0f, 1.0f);
-        else if (std::sscanf (line, "master %f", &a) == 1) s.master = clampf (a, 0.0f, 1.0f);
+        else if (std::sscanf (line, "master %f", &a) == 1)
+        {
+            // before version 3 MASTER was a plain volume (0..1): keep the same level as drive
+            if (version < 3)
+            {
+                const double db = a > 0.0001f ? 20.0 * std::log10 ((double) a) : -15.0;
+                a = (float) ((db + 15.0) / 40.0);
+            }
+            s.master = clampf (a, 0.0f, 1.0f);
+        }
         else if (std::strncmp (line, "sidecar ", 8) == 0)
         {
             float f0, f1, f2, g0, g1, g2, fd;

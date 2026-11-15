@@ -127,7 +127,8 @@ const NSRect kExportMidi = { { 996.0, 708.0 }, { 160.0, 52.0 } };
 
 // M-50 Master sidecar (its own face coordinates, 216 wide)
 const CGFloat kSW = kSideFaceWidth, kSCx = 108.0;
-const NSRect kVuRect[2] = { { { 14.0, 30.0 }, { 88.0, 60.0 } }, { { 114.0, 30.0 }, { 88.0, 60.0 } } };
+const NSRect kVuRect[2] = { { { 14.0, 26.0 }, { 88.0, 58.0 } }, { { 114.0, 26.0 }, { 88.0, 58.0 } } };
+const NSPoint kOverloadLed = { 108.0, 96.0 };
 const NSRect kBypassRect = { { 92.0, 140.0 }, { 32.0, 22.0 } };
 const CGFloat kRingR = 31.0, kCapR = 18.0;
 inline CGFloat bandY (int b) { return 392.0 - 84.0 * b; }        // LOW 392, MID 308, HIGH 224
@@ -757,6 +758,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     long lastSig;
     float flashWas;
     float vuWas[2];
+    bool olWas;
     NSTimer* timer;
 }
 
@@ -785,6 +787,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         lastSig = -1;
         flashWas = 0.0f;
         vuWas[0] = vuWas[1] = -60.0f;
+        olWas = false;
         paintOn = false;
         paintRow = -1;
         dragStartY = 0.0;
@@ -926,11 +929,13 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     }
     flashWas = fl;
     const float vl = e.vuDb (0), vr = e.vuDb (1);
-    if (std::fabs (vl - vuWas[0]) > 0.2f || std::fabs (vr - vuWas[1]) > 0.2f)
+    const bool ol = e.overload();
+    if (std::fabs (vl - vuWas[0]) > 0.2f || std::fabs (vr - vuWas[1]) > 0.2f || ol != olWas)
     {
         vuWas[0] = vl;
         vuWas[1] = vr;
-        [self setNeedsDisplayInRect: NSMakeRect (kSideX + F, F, kSW, 100.0)];
+        olWas = ol;
+        [self setNeedsDisplayInRect: NSMakeRect (kSideX + F, F, kSW, 116.0)];
     }
     if (messageUntil > 0.0 && messageUntil < [NSDate timeIntervalSinceReferenceDate]) messageUntil = 0.0;
 }
@@ -992,7 +997,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     if (k == kKTempo) return (120.0f - 30.0f) / 270.0f;
     if (k == kKSwing) return 0.0f;
     if (k == kKAccent) return 0.5f;
-    if (k == kKMaster) return 0.8f;
+    if (k == kKMaster) return 0.375f;
     if (k >= kKLevel) return 0.8f;
     if (k >= kKPan) return 0.5f;
     if (k >= kKDecay) return 1.0f;
@@ -1031,7 +1036,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     else if (k == kKTempo) std::snprintf (t, sizeof (t), "TEMPO   %.1f BPM", s.tempo);
     else if (k == kKSwing) std::snprintf (t, sizeof (t), "SWING   %d%%", (int) (50.0f + s.swing * 50.0f + 0.5f));
     else if (k == kKAccent) std::snprintf (t, sizeof (t), "ACCENT   %.1f", s.accent * 10.0f);
-    else if (k == kKMaster) std::snprintf (t, sizeof (t), "MASTER   %.1f", s.master * 10.0f);
+    else if (k == kKMaster) std::snprintf (t, sizeof (t), "MASTER (DRIVE INTO M-50)   %+.1f dB", MasterSection::driveDb (s.master));
     else if (k >= kKLevel)
     {
         const float lv = s.channels[ch].level;
@@ -1102,12 +1107,12 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         [[NSColor colorWithCalibratedWhite: q < 0.5 ? 1.0 : 0.0 alpha: 0.035 + 0.04 * q] set];
         NSRectFillUsingOperation (NSMakeRect (x, y, 3.0, 1.0), NSCompositeSourceOver);
     }
-    drawText ("L", boldFont (11.0), ink, NSMidX (kVuRect[0]), 106.0);
-    drawText ("R", boldFont (11.0), ink, NSMidX (kVuRect[1]), 106.0);
-    drawText ("PROGRAM", boldFont (8.0), ink, kSCx, 106.0);
+    drawText ("L", boldFont (11.0), ink, NSMidX (kVuRect[0]), 97.0);
+    drawText ("R", boldFont (11.0), ink, NSMidX (kVuRect[1]), 97.0);
+    drawText ("OVERLOAD", boldFont (6.5), ink, kSCx, 108.0);
     [ink set];
-    strokeLine (20.0, 116.0, kSW - 20.0, 116.0, 1.0);
-    drawText ("EQUALIZER", boldFont (10.0), ink, kSCx, 128.0);
+    strokeLine (20.0, 118.0, kSW - 20.0, 118.0, 1.0);
+    drawText ("EQUALIZER", boldFont (10.0), ink, kSCx, 129.0);
     drawText ("BYPASS", boldFont (8.0), ink, kSCx, 173.0);
     drawText ("FREQ", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 34.0);
     drawText ("BOOST", plainFont (7.5), ink, kSW - 24.0, bandY (2) - 25.0);
@@ -1168,6 +1173,31 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     [tr concat];
     NSRectClip (NSMakeRect (0, 0, kSW, kFaceHeight));
     for (int c = 0; c < 2; ++c) drawVU (kVuRect[c], e.vuDb (c));
+    // OVERLOAD LED: MASTER driving the M-50 preamp into its rounding
+    {
+        const NSPoint c = kOverloadLed;
+        const CGFloat r = 4.0;
+        NSBezierPath* lens = [NSBezierPath bezierPathWithOvalInRect: NSMakeRect (c.x - r, c.y - r, 2 * r, 2 * r)];
+        if (e.overload())
+        {
+            const CGFloat hr = 13.0;
+            NSGradient* halo = [[[NSGradient alloc] initWithColorsAndLocations:
+                                   rgba (255, 40, 24, 0.75), 0.0, rgba (255, 40, 24, 0.22), 0.5, rgba (255, 40, 24, 0.0), 1.0, nil] autorelease];
+            [halo drawInBezierPath: [NSBezierPath bezierPathWithOvalInRect: NSMakeRect (c.x - hr, c.y - hr, 2 * hr, 2 * hr)]
+                  relativeCenterPosition: NSMakePoint (0.0, 0.0)];
+            NSGradient* g = [[[NSGradient alloc] initWithColorsAndLocations:
+                                rgb (255, 236, 220), 0.0, rgb (255, 70, 46), 0.5, rgb (214, 20, 12), 1.0, nil] autorelease];
+            [g drawInBezierPath: lens relativeCenterPosition: NSMakePoint (-0.2, 0.3)];
+        }
+        else
+        {
+            NSGradient* g = [[[NSGradient alloc] initWithStartingColor: rgb (130, 30, 26) endingColor: rgb (60, 10, 8)] autorelease];
+            [g drawInBezierPath: lens relativeCenterPosition: NSMakePoint (-0.3, 0.4)];
+        }
+        [rgb (30, 20, 18) set];
+        [lens setLineWidth: 0.8];
+        [lens stroke];
+    }
     {
         const NSRect r = kBypassRect;
         NSBezierPath* bp = [NSBezierPath bezierPathWithRoundedRect: NSInsetRect (r, -2.5, -2.5) xRadius: 2.0 yRadius: 2.0];

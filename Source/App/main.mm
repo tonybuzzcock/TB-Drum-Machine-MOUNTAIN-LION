@@ -779,6 +779,15 @@ static void loadKits (AppCore* c)
     e.song().fader = 0.75f;
     e.unlock();
 
+    // MASTER drives the M-50 preamp: push it and the OVERLOAD LED lights
+    e.lock(); e.song().master = 1.0f; e.play(); e.unlock();
+    [self renderFor: 1.0];
+    [self check: e.overload() what: "sidecar: MASTER pushed, OVERLOAD LED lit"];
+    [self shot: "sidecar_overload"];
+    e.lock(); e.stop(); e.song().master = 0.375f; e.unlock();
+    [self renderFor: 0.5];
+    [self check: ! e.overload() what: "sidecar: MASTER at nominal, LED out"];
+
     // naming a pattern
     [self click: [view rectForTab: kPageSteps]];
     [view startNamingPattern];

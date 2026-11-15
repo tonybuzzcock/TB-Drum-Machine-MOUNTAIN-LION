@@ -141,7 +141,7 @@ struct Song
     float tempo;            // BPM 30..300
     float swing;            // 0..0.5 of a step (50%..75% shuffle)
     float accent;           // 0..1 accent amount
-    float master;           // 0..1 master volume
+    float master;           // MASTER = drive into the M-50 sidecar: 0..1 -> -15..+25 dB, 0.375 = 0 dB
     char name[kNameLen];    // song name for exports (up to 40 characters)
     // the M-50 Master sidecar (MasterSection bands: 0 LOW, 1 MID, 2 HIGH)
     float eqFreq[3];        // 0..1 over each band's sweep
@@ -216,6 +216,7 @@ public:
     int trackStep (int track) const;
     // 0..1 flash per pad, decays after a hit
     float vuDb (int ch) const { return master.vuDb (ch); }
+    bool overload() const { return master.overload(); }
     float padFlash (int pad) const { return (pad >= 0 && pad < kNumPads) ? flash[pad] : 0.0f; }
     int padFlashChoice (int pad) const { return (pad >= 0 && pad < kNumPads) ? flashChoice[pad] : 0; }
 

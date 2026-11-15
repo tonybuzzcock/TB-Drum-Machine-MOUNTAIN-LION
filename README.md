@@ -74,6 +74,11 @@ Knobs: drag up and down (hold Shift for fine changes), double-click to reset, or
 
 A second mahogany-framed unit bolted on the right, in the TB M50 Dual Channel Strip's look and
 sound, on the drum machine's stereo output:
+- **MASTER drives the M-50**: the drum machine's MASTER knob is the drive into the sidecar's M-50
+  preamp, like the strip's TRIM on LINE: -15 to +25 dB, with 0 dB at 3.75. Pushed up, the preamp's
+  op-amps round the peaks, with the same slightly lopsided character as the Dual Channel Strip.
+- **OVERLOAD LED** under the VUs lights 25 dB over nominal, just past where the rounding starts,
+  and holds 120 ms so each flash shows. Pull STEREO MASTER back to keep the level while you drive it.
 - **L / R VUs** at the top: 0 VU = a -18 dBFS rms sine, with 300 ms VU ballistics.
 - **EQUALIZER**: HIGH 2.5–15 kHz, MID 500 Hz–5 kHz, LOW 50 Hz–1 kHz, ±15 dB, Q 0.9 (the M-50's).
   The orange ring sets the frequency and the dark cap boost/cut. **EQ BYPASS** lights red when the
@@ -81,8 +86,7 @@ sound, on the drum machine's stereo output:
 - **STEREO MASTER** fader, M-50 law: 7.5 = 0 dB, 10 = +8 dB, 5 = -10 dB.
 
 The exported stereo mix goes through the sidecar. The separate mono tracks stay dry, for mixing in
-the DAW. Settings are saved with the session. The top bar's MASTER knob sets the drum machine's
-level going into the sidecar.
+the DAW. Settings are saved with the session.
 
 ## Sync, MIDI in, exports
 

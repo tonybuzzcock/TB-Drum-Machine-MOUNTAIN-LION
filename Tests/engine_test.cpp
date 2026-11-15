@@ -338,6 +338,11 @@ int main (int argc, char** argv)
         std::fclose (f);
         check (! loadSession (path, t, st2), "half-written file is refused");
         f = std::fopen (path, "w");
+        std::fprintf (f, "TB Drum Machine 2\nmaster 0.8\nend\n");
+        std::fclose (f);
+        check (loadSession (path, t, st2) && std::fabs (MasterSection::driveDb (t.master) - 20.0 * std::log10 (0.8)) < 0.01,
+               "older session: MASTER volume becomes the same level of drive");
+        f = std::fopen (path, "w");
         std::fprintf (f, "TB Drum Machine 1\npattern 0 0 16\nname OLD\ntrack 10 16 1...............................\ntrack 0 16 .1..............................\nend\n");
         std::fclose (f);
         check (loadSession (path, t, st2) && t.patterns[0].tracks[kAccentTrack].steps[0].on && ! t.patterns[0].tracks[10].steps[0].on
@@ -474,6 +479,31 @@ int main (int argc, char** argv)
         s.fader = 0.5f;
         check (std::fabs (Probe::gainDb (s, 1000.0) + 10.0) < 0.1, "fader at 5: -10 dB");
         s.fader = 0.75f;
+        // MASTER drives the M-50 preamp: clean at nominal, OVERLOAD LED and rounding when pushed
+        {
+            MasterSection d;
+            d.setSampleRate (48000.0);
+            d.reset();
+            std::vector<float> a (4800), b (4800);
+            for (int i = 0; i < 4800; ++i) a[i] = b[i] = (float) (0.4 * std::sin (2.0 * M_PI * 200.0 * i / 48000.0));
+            Song q;
+            q.setDefaults();
+            d.process (&a[0], &b[0], 4800, q);
+            double pk = 0.0;
+            for (int i = 2400; i < 4800; ++i) pk = std::max (pk, (double) std::fabs (a[i]));
+            check (! d.overload () && std::fabs (pk - 0.4) < 0.005, "MASTER at nominal: clean, no OVERLOAD");
+            q.master = (float) ((18.0 + 15.0) / 40.0);       // +18 dB
+            for (int i = 0; i < 4800; ++i) a[i] = b[i] = (float) (0.6 * std::sin (2.0 * M_PI * 200.0 * i / 48000.0));
+            d.reset();
+            d.process (&a[0], &b[0], 4800, q);
+            pk = 0.0;
+            for (int i = 2400; i < 4800; ++i) pk = std::max (pk, (double) std::fabs (a[i]));
+            const double clean = 0.6 * std::pow (10.0, 18.0 / 20.0);
+            char m2[120];
+            std::snprintf (m2, sizeof (m2), "MASTER +18 dB: OVERLOAD lights, peaks rounded (%.2f instead of %.2f)", pk, clean);
+            check (d.overload () && pk < clean * 0.95 && pk > 1.9, m2);
+            check (std::fabs (MasterSection::driveDb (0.375) - 0.0) < 1e-9 && std::fabs (MasterSection::driveDb (1.0) - 25.0) < 1e-9, "MASTER range -15..+25 dB, 0 dB at 3.75");
+        }
         MasterSection m;
         m.setSampleRate (48000.0);
         m.reset();
@@ -514,7 +544,8 @@ int main (int argc, char** argv)
     {
         Song s;
         s.setDefaults();
-        s.master = 0.4f;
+        s.channels[0].level = 0.5f;      // quiet enough that the sidecar stays clean
+        s.channels[7].level = 0.5f;
         for (int k = 0; k < 16; k += 4) setStep (s.patterns[0], 0, k);
         setStep (s.patterns[0], 7, 2, 1);
         setStep (s.patterns[0], 6, 12, 0);

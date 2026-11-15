@@ -21,7 +21,32 @@ namespace
     const double kFaderDb[7]    = { -200.0, -60.0, -40.0, -25.0, -10.0, 0.0, 8.0 };
 
     inline double clamp01 (double v) { return v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v); }
+
+    // The M-50 preamp, as in TB M50 Dual Channel Strip: 1.0 full scale = 2.5 V
+    // peak; op-amp rails about +13.5 / -12.5 V, rounding gently from just under
+    // the OVERLOAD LED (8 V peak, 25 dB over nominal), slightly lopsided.
+    const double kVoltsPerUnit = 2.5;
+    const double kPreKneePosV = 6.5, kPreSwingPosV = 13.5;
+    const double kPreKneeNegV = 6.0, kPreSwingNegV = 12.5;
+    const double kOlThresholdV = 8.0;
+    const double kOlHoldS = 0.12;
+    const double kDriveMinDb = -15.0, kDriveMaxDb = 25.0;   // 0 dB at 0.375
+
+    inline double softClip (double x, double knee, double swing)
+    {
+        const double a = x < 0.0 ? -x : x;
+        if (a <= knee) return x;
+        const double r = swing - knee;
+        const double y = knee + r * std::tanh ((a - knee) / r);
+        return x < 0.0 ? -y : y;
+    }
+    inline double preClip (double v)
+    {
+        return v >= 0.0 ? softClip (v, kPreKneePosV, kPreSwingPosV) : softClip (v, kPreKneeNegV, kPreSwingNegV);
+    }
 }
+
+double MasterSection::driveDb (double v) { return kDriveMinDb + (kDriveMaxDb - kDriveMinDb) * clamp01 (v); }
 
 double MasterSection::eqHz (int band, double v)
 {
@@ -53,7 +78,7 @@ static double faderGain (double v)
     return g;
 }
 
-MasterSection::MasterSection() : fs (44100.0), byp (0.0), gain (1.0), vuK (0.0)
+MasterSection::MasterSection() : fs (44100.0), byp (0.0), gain (1.0), vuK (0.0), drive (1.0), olCount (0), olHold (1)
 {
     reset();
 }
@@ -62,6 +87,7 @@ void MasterSection::setSampleRate (double sr)
 {
     fs = sr > 1000.0 ? sr : 44100.0;
     vuK = 1.0 - std::exp (-1.0 / (kVuTauS * fs));
+    olHold = (int) (kOlHoldS * fs);
     for (int b = 0; b < kNumBands; ++b) lastF[b] = lastG[b] = -1.0f;
 }
 
@@ -76,6 +102,9 @@ void MasterSection::reset()
     for (int c = 0; c < 2; ++c) { vuA[c] = 0.0; vuB[c] = 0.0; }
     byp = 0.0;
     gain = -1.0;      // jump to the fader on the first block
+    drive = -1.0;     // and to the drive
+    olCount = 0;
+    olHold = (int) (kOlHoldS * fs);
     vuK = 1.0 - std::exp (-1.0 / (kVuTauS * fs));
 }
 
@@ -104,6 +133,9 @@ void MasterSection::process (float* L, float* R, int n, const Song& s)
             lastF[b] = s.eqFreq[b];
             lastG[b] = s.eqGain[b];
         }
+    const double dTarget = std::pow (10.0, driveDb (s.master) / 20.0);
+    if (drive < 0.0) drive = dTarget;
+    const double dStep = n > 0 ? (dTarget - drive) / n : 0.0;
     const double target = faderGain (s.fader);
     if (gain < 0.0) gain = target;
     const double gStep = n > 0 ? (target - gain) / n : 0.0;
@@ -114,9 +146,15 @@ void MasterSection::process (float* L, float* R, int n, const Song& s)
     {
         gain += gStep;
         byp += bStep;
+        drive += dStep;
+        if (olCount > 0) --olCount;
         for (int c = 0; c < 2; ++c)
         {
-            const double x = io[c][i];
+            // MASTER drives the M-50 preamp (volts), which rounds before the LED
+            double pv = io[c][i] * drive * kVoltsPerUnit;
+            if (pv != pv) pv = 0.0;
+            if (pv >= kOlThresholdV || pv <= -kOlThresholdV) olCount = olHold;
+            const double x = preClip (pv) / kVoltsPerUnit;
             double y = x;
             for (int b = 0; b < kNumBands; ++b)
             {

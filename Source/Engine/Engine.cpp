@@ -272,7 +272,7 @@ void Song::setDefaults()
     tempo = 120.0f;
     swing = 0.0f;
     accent = 0.5f;
-    master = 0.8f;
+    master = 0.375f;     // 0 dB into the M-50 sidecar
     std::memset (name, 0, sizeof (name));
     for (int b = 0; b < 3; ++b) { eqFreq[b] = 0.5f; eqGain[b] = 0.5f; }
     eqBypass = false;
@@ -628,7 +628,7 @@ void Engine::render (float* L, float* R, int n)
         const bool audible = onlyPad >= 0 ? pad == onlyPad : (! ch.mute && (anySolo ? ch.solo : true));
         const float pan = ch.pan < -1.0f ? -1.0f : (ch.pan > 1.0f ? 1.0f : ch.pan);
         const double ang = (pan + 1.0) * 0.25 * M_PI;
-        const float lvl = audible ? ch.level * ch.level * data.master : 0.0f;
+        const float lvl = audible ? ch.level * ch.level : 0.0f;    // MASTER is the sidecar's drive now
         const float gl = (float) (lvl * std::cos (ang) * 1.41421356);
         const float gr = (float) (lvl * std::sin (ang) * 1.41421356);
 
