@@ -37,9 +37,9 @@ The samples aren't in this public repo; the app reads them from the Kits folder.
 
 Two more kits, from the user's own samples:
 
-- **8 BIT** (folder **TB 8 Bit**): Kick = KICK / ELECTRO, Snare = ELECTRO SNARE, Hi-Hat = COIN, then
-  BLIP, WONKY, ALARMING, SPACE HIT on the toms, WHIPLASH (Crash), NAG REPEAT (Ride) and
-  DISCHORDANT (Clap/Tamb).
+- **8 BIT** (folder **TB 8 Bit**): every sound on its own pad, all eleven used, in the order KICK,
+  KICK ELECTRO, ELECTRO SNARE, COIN, BLIP, WONKY, ALARMING, SPACE HIT, WHIPLASH, NAG REPEAT,
+  DISCHORDANT.
 - **TVOD** (folder **TB TVOD Kit**): every sound on its own pad, in the order KICK, SNARE, INTENDO,
   WHITE NOISE 1, WHITE NOISE 2, WHITE NOISE 3 (the long one), WHIPLASH.
 

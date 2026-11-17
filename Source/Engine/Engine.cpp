@@ -66,20 +66,21 @@ static const KitDef kKits[kNumKits] = {
         { "RIDE",        1, { "", "" },              { { "Ride LM1.wav", 0, 0 }, NOFILE }, { 51, 0 } },
         { "MID TOM 2",   1, { "", "" },              { { "Tom 2 LM1.wav", 0, 0 }, NOFILE }, { 47, 0 } } }, { 0 } },
 
-    // 8 Bit: two kicks on the Kick pad, the effects on the toms (shortest to
-    // longest) and the long ones on Crash, Ride and Clap/Tamb
+    // 8 Bit: every sound on its own pad, in the user's order: Kick, Kick Electro,
+    // Electro Snare, Coin, then the effects (shortest to longest) and the long ones
     { "8 BIT", "TB 8 Bit", {
-        { "KICK",        2, { "KICK", "ELECTRO" },   { { "TB_8Bit_Kick.wav", 0, 0 }, { "TB_8Bit_Kick_Electro.wav", 0, 0 } }, { 36, 35 } },
+        { "KICK",        1, { "", "" },              { { "TB_8Bit_Kick.wav", 0, 0 }, NOFILE }, { 36, 0 } },
         { "ELECTRO SNARE", 1, { "", "" },            { { "TB_8Bit_Snare_Electro.wav", 0, 0 }, NOFILE }, { 38, 0 } },
         { "SPACE HIT",   1, { "", "" },              { { "TB_8Bit_Space_Hit.wav", 0, 0 }, NOFILE }, { 45, 0 } },
         { "WONKY",       1, { "", "" },              { { "TB_8Bit_Wonky.wav", 0, 0 }, NOFILE }, { 48, 0 } },
         { "BLIP",        1, { "", "" },              { { "TB_8Bit_Blip.wav", 0, 0 }, NOFILE }, { 50, 0 } },
-        UNUSED,
+        { "KICK ELECTRO", 1, { "", "" },             { { "TB_8Bit_Kick_Electro.wav", 0, 0 }, NOFILE }, { 35, 0 } },
         { "DISCHORDANT", 1, { "", "" },              { { "TB_8Bit_Dischordant.wav", 0, 0 }, NOFILE }, { 39, 0 } },
         { "COIN",        1, { "", "" },              { { "TB_8Bit_HiHat_Coin.wav", 0, 0 }, NOFILE }, { 42, 0 } },
         { "WHIPLASH",    1, { "", "" },              { { "TB_8Bit_Whiplash.wav", 0, 0 }, NOFILE }, { 49, 0 } },
         { "NAG REPEAT",  1, { "", "" },              { { "TB_8Bit_Nag_Repeat.wav", 0, 0 }, NOFILE }, { 51, 0 } },
-        { "ALARMING",    1, { "", "" },              { { "TB_8Bit_Alarming.wav", 0, 0 }, NOFILE }, { 47, 0 } } }, { 0 } },
+        { "ALARMING",    1, { "", "" },              { { "TB_8Bit_Alarming.wav", 0, 0 }, NOFILE }, { 47, 0 } } },
+      { 0, 5, 1, 7, 4, 3, 10, 2, 8, 9, 6 } },
 
     // TVOD: every sound on its own pad, in the user's order: Kick, Snare,
     // Intendo, White Noise 1, 2 and 3 (medium 1, medium 2, long), Whiplash

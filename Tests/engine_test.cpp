@@ -92,9 +92,14 @@ int main (int argc, char** argv)
                && std::strcmp (kitDef (kKitLM1).pads[10].file[0][0], "Tom 2 LM1.wav") == 0, "LM-1: MID TOM 1 = new sample, MID TOM 2 = Tom 2");
         check (! kb.padAvailable (kKit707, 10) && ! kb.padAvailable (kKitCR78, 10), "707 and CR-78 have no 11th pad");
         check (kb.samplesExpected (kKit8Bit) == 11 && kb.samplesExpected (kKitTVOD) == 7, "8 BIT 11 samples, TVOD 7");
-        check (kitDef (kKit8Bit).pads[0].numChoices == 2 && std::strcmp (kitDef (kKit8Bit).pads[4].label, "BLIP") == 0
-               && std::strcmp (kitDef (kKit8Bit).pads[10].label, "ALARMING") == 0 && kitDef (kKit8Bit).pads[5].numChoices == 0,
-               "8 BIT: KICK / ELECTRO, BLIP on Hi Tom, ALARMING on Mid Tom 2, Rim/Cow unused");
+        {
+            const KitDef& eb = kitDef (kKit8Bit);
+            const char* want8[11] = { "KICK", "KICK ELECTRO", "ELECTRO SNARE", "COIN", "BLIP", "WONKY", "ALARMING",
+                                      "SPACE HIT", "WHIPLASH", "NAG REPEAT", "DISCHORDANT" };
+            bool ok8 = true;
+            for (int i = 0; i < 11; ++i) ok8 = ok8 && eb.pads[eb.order[i]].numChoices == 1 && std::strcmp (eb.pads[eb.order[i]].label, want8[i]) == 0;
+            check (ok8, "8 BIT: eleven pads, KICK ELECTRO second, everything else one down");
+        }
         const KitDef& tv = kitDef (kKitTVOD);
         const char* want[7] = { "KICK", "SNARE", "INTENDO", "WHITE NOISE 1", "WHITE NOISE 2", "WHITE NOISE 3", "WHIPLASH" };
         bool tvOk = true;
