@@ -37,7 +37,12 @@ const NSRect kSyncRect = { { 690.0, 32.0 }, { 112.0, 28.0 } };
 const CGFloat kTopKnobY = 46.0, kTopKnobR = 22.0, kCaptionY = 90.0;
 const CGFloat kTopKnobX[4] = { 254.0, 440.0, 530.0, 620.0 };   // tempo, swing, accent, master
 
-inline NSRect kitRect (int i) { return NSMakeRect (840.0 + i * 108.0, 26.0, 100.0, 40.0); }
+// KIT drop-down, as TB Synth's instrument selector: tan box in a dark well,
+// arrow keys at each end step through the kits, the name opens the menu
+const NSRect kKitMenu = { { 840.0, 26.0 }, { 316.0, 40.0 } };
+const CGFloat kArrowW = 36.0;
+inline NSRect kitLeft() { return NSMakeRect (kKitMenu.origin.x, kKitMenu.origin.y, kArrowW, kKitMenu.size.height); }
+inline NSRect kitRight() { return NSMakeRect (NSMaxX (kKitMenu) - kArrowW, kKitMenu.origin.y, kArrowW, kKitMenu.size.height); }
 inline NSRect tabRect (int i) { return NSMakeRect (20.0 + i * 122.0, kTabY, 116.0, kTabH); }
 const NSRect kTimeRect = { { 520.0, 114.0 }, { 118.0, 32.0 } };     // time signature drop-down
 const NSRect kLengthRect = { { 646.0, 114.0 }, { 116.0, 32.0 } };
@@ -53,12 +58,14 @@ int gOrder[kNumPads] = { 0, 1, 7, 4, 3, 10, 2, 8, 9, 6, 5 };   // for the kit on
 void setOrderForKit (int kit)
 {
     const KitDef& kd = kitDef (kit);
+    const bool own = kd.order[0] != kd.order[1];          // the kit gives its own order
+    const int* base = own ? kd.order : kBaseOrder;
     int n = 0;
     for (int pass = 0; pass < 2; ++pass)
         for (int i = 0; i < kNumPads; ++i)
         {
-            const bool used = kd.pads[kBaseOrder[i]].numChoices > 0;
-            if (used == (pass == 0)) gOrder[n++] = kBaseOrder[i];
+            const bool used = kd.pads[base[i]].numChoices > 0;
+            if (used == (pass == 0)) gOrder[n++] = base[i];
         }
 }
 inline int padAt (int i) { return gOrder[i]; }
@@ -1334,7 +1341,7 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     drawText ("ACCENT", boldFont (11.0), ink, kTopKnobX[2], kCaptionY);
     drawText ("MASTER", boldFont (11.0), ink, kTopKnobX[3], kCaptionY);
     drawText ("SYNC", boldFont (11.0), ink, NSMidX (kSyncRect), kCaptionY);
-    drawText ("KIT", boldFont (11.0), ink, NSMidX (kitRect (1)), kCaptionY);
+    drawText ("KIT", boldFont (11.0), ink, NSMidX (kKitMenu), kCaptionY);
     drawEnds (NSMakePoint (kTopKnobX[0], kTopKnobY), kTopKnobR, "30", 0, "300");
     drawEnds (NSMakePoint (kTopKnobX[1], kTopKnobY), kTopKnobR, "50%", 0, "75%");
     drawEnds (NSMakePoint (kTopKnobX[2], kTopKnobY), kTopKnobR, "0", 0, "10");
@@ -1381,13 +1388,41 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
     else std::snprintf (t, sizeof (t), "%.1f", e.song().tempo);
     [self drawLimeBox: kTempoBox text: t size: 17.0];
     drawSlide2 (kSyncRect, "INT", "MIDI", e.externalSync(), kAmber);
-    const int kit = e.song().patterns[e.currentPattern()].kit;
-    for (int k = 0; k < kNumKits; ++k)
+    // KIT drop-down
     {
-        char lab[48];
-        const bool missing = core->kits.samplesLoaded (k) == 0;
-        std::snprintf (lab, sizeof (lab), "%s", kitDef (k).name);
-        drawButton (kitRect (k), lab, k == kit, kRed, 16.0, ! missing);
+        const int kit = e.song().patterns[e.currentPattern()].kit;
+        const NSRect r = kKitMenu;
+        NSBezierPath* well = [NSBezierPath bezierPathWithRoundedRect: NSInsetRect (r, -2.0, -2.0) xRadius: 5.0 yRadius: 5.0];
+        [rgb (30, 29, 28) set];
+        [well fill];
+        NSBezierPath* face = [NSBezierPath bezierPathWithRoundedRect: r xRadius: 4.0 yRadius: 4.0];
+        NSGradient* g = [[[NSGradient alloc] initWithStartingColor: rgb (232, 212, 170) endingColor: rgb (204, 178, 130)] autorelease];
+        [g drawInBezierPath: face angle: -90.0];
+        const NSRect keys[2] = { kitLeft(), kitRight() };
+        for (int k = 0; k < 2; ++k)
+        {
+            NSBezierPath* kp = [NSBezierPath bezierPathWithRoundedRect: NSInsetRect (keys[k], 3.0, 3.0) xRadius: 3.0 yRadius: 3.0];
+            NSGradient* kg = [[[NSGradient alloc] initWithStartingColor: rgb (84, 82, 78) endingColor: rgb (44, 43, 41)] autorelease];
+            [kg drawInBezierPath: kp angle: -90.0];
+            NSBezierPath* tri = [NSBezierPath bezierPath];
+            const CGFloat cx = NSMidX (keys[k]), cy = NSMidY (keys[k]);
+            if (k == 0) { [tri moveToPoint: NSMakePoint (cx + 5, cy - 7)]; [tri lineToPoint: NSMakePoint (cx - 6, cy)]; [tri lineToPoint: NSMakePoint (cx + 5, cy + 7)]; }
+            else        { [tri moveToPoint: NSMakePoint (cx - 5, cy - 7)]; [tri lineToPoint: NSMakePoint (cx + 6, cy)]; [tri lineToPoint: NSMakePoint (cx - 5, cy + 7)]; }
+            [tri closePath];
+            [[NSColor whiteColor] set];
+            [tri fill];
+        }
+        const bool missing = core->kits.samplesLoaded (kit) == 0;
+        drawText (kitDef (kit).name, boldFont (17.0), missing ? rgb (120, 108, 86) : [NSColor blackColor], NSMidX (r) - 8.0, NSMidY (r) + 0.5);
+        NSBezierPath* dm = [NSBezierPath bezierPath];
+        const CGFloat dx = NSMaxX (r) - kArrowW - 16.0, dy = NSMidY (r);
+        [dm moveToPoint: NSMakePoint (dx - 5, dy - 3)]; [dm lineToPoint: NSMakePoint (dx + 5, dy - 3)]; [dm lineToPoint: NSMakePoint (dx, dy + 4)];
+        [dm closePath];
+        [rgb (28, 28, 26) set];
+        [dm fill];
+        [rgb (40, 42, 38) set];
+        [face setLineWidth: 1.0];
+        [face stroke];
     }
 }
 
@@ -1937,8 +1972,12 @@ static std::string cleanName (const char* s)
     [self setNeedsDisplay: YES];
 }
 
+- (void) kitPicked: (NSMenuItem*) item { [self setKit: (int) [item tag]]; }
+- (void) chooseKit: (int) k { [self setKit: k]; }
+
 - (void) setKit: (int) k
 {
+    if (k < 0 || k >= kNumKits) return;
     tbdm::Engine& e = core->engine;
     if (core->kits.samplesLoaded (k) == 0)
     {
@@ -2464,7 +2503,27 @@ static std::string cleanName (const char* s)
         [self touched];
         return;
     }
-    for (int i = 0; i < kNumKits; ++i) if (inRect (p, kitRect (i))) { [self setKit: i]; return; }
+    if (inRect (p, kKitMenu))
+    {
+        const int cur = e.song().patterns[e.currentPattern()].kit;
+        if (inRect (p, kitLeft())) { [self setKit: (cur + kNumKits - 1) % kNumKits]; return; }
+        if (inRect (p, kitRight())) { [self setKit: (cur + 1) % kNumKits]; return; }
+        NSMenu* m = [[[NSMenu alloc] initWithTitle: @"Kit"] autorelease];
+        [m setAutoenablesItems: NO];
+        for (int k = 0; k < kNumKits; ++k)
+        {
+            NSString* title = core->kits.samplesLoaded (k) > 0 ? str (kitDef (k).name)
+                                                              : [NSString stringWithFormat: @"%s   (no samples)", kitDef (k).name];
+            NSMenuItem* it = [[[NSMenuItem alloc] initWithTitle: title action: @selector (kitPicked:) keyEquivalent: @""] autorelease];
+            [it setTarget: self];
+            [it setTag: k];
+            [it setState: k == cur ? NSOnState : NSOffState];
+            [m addItem: it];
+        }
+        const NSRect vr = faceToView (kKitMenu);
+        [m popUpMenuPositioningItem: [m itemAtIndex: cur] atLocation: NSMakePoint (NSMinX (vr) + kArrowW, NSMinY (vr) + 4.0) inView: self];
+        return;
+    }
     for (int i = 0; i < 4; ++i) if (inRect (p, tabRect (i))) { page = i; core->dirty = true; [self setNeedsDisplay: YES]; return; }
     for (int i = 0; i < kNumPatterns; ++i) if (inRect (p, slotRect (i))) { [self selectPatternSlot: i]; return; }
     for (int i = 0; i < 4; ++i) if (inRect (p, patBtnRect (i))) { [self patternButton: i]; return; }
@@ -2688,7 +2747,7 @@ static std::string cleanName (const char* s)
 }
 - (NSRect) rectForTab: (int) i { return faceToView (tabRect (i)); }
 - (NSRect) rectForPatternSlot: (int) i { return faceToView (slotRect (i)); }
-- (NSRect) rectForKit: (int) i { return faceToView (kitRect (i)); }
+- (NSRect) rectForKit: (int) i { return faceToView (i < 0 ? kitLeft() : (i > 0 ? kitRight() : kKitMenu)); }
 - (NSRect) rectForPlay { return faceToView (kPlayRect); }
 - (NSRect) rectForEditMode: (int) i { return faceToView (modeRect (i)); }
 - (NSRect) readoutRect { return faceToView (kReadout); }

@@ -475,17 +475,19 @@ static void loadKits (AppCore* c)
     NSURL* u = [NSURL fileURLWithPath: [NSString stringWithUTF8String: dir.c_str()]];
     [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs: [NSArray arrayWithObject: u]];
     if (gCore->samplesLoaded == 0)
-        [view showMessage: "PUT THE TB 707, TB CR78 AND TB LM1 FOLDERS IN KITS, THEN KITS > RELOAD KITS"];
+        [view showMessage: "PUT THE KIT FOLDERS IN HERE, THEN KITS > RELOAD KITS"];
 }
 
 - (void) reportKits
 {
     char t[160];
     if (gCore->samplesLoaded == 0) std::snprintf (t, sizeof (t), "NO KITS FOUND: KITS MENU > SHOW KITS FOLDER");
-    else std::snprintf (t, sizeof (t), "KITS LOADED   707 %d/%d   CR-78 %d/%d   LM-1 %d/%d",
-                        gCore->kits.samplesLoaded (0), gCore->kits.samplesExpected (0),
-                        gCore->kits.samplesLoaded (1), gCore->kits.samplesExpected (1),
-                        gCore->kits.samplesLoaded (2), gCore->kits.samplesExpected (2));
+    else
+    {
+        int n = std::snprintf (t, sizeof (t), "KITS ");
+        for (int k = 0; k < kNumKits && n < (int) sizeof (t); ++k)
+            n += std::snprintf (t + n, sizeof (t) - n, "  %s %d/%d", kitDef (k).name, gCore->kits.samplesLoaded (k), gCore->kits.samplesExpected (k));
+    }
     [view showMessage: t];
 }
 
@@ -698,7 +700,7 @@ static void loadKits (AppCore* c)
     e.lock(); e.stop(); e.unlock();
 
     // kits
-    [self click: [view rectForKit: 1]];
+    [view chooseKit: 1];
     [self check: e.song().patterns[0].kit == kKitCR78 what: "kit button: CR-78"];
     [self shot: "steps_cr78"];
     [self click: [view rectForPatternSlot: 2]];
@@ -706,7 +708,7 @@ static void loadKits (AppCore* c)
     [self check: [view rowForPad: 10] == 6 && [view rowForPad: 6] == 10 && [view rowForPad: 5] == 11 what: "LM-1: MID TOM 2 after MID TOM 1, unused pads last"];
     [self shot: "steps_lm1"];
     [self click: [view rectForPatternSlot: 0]];
-    [self click: [view rectForKit: 0]];
+    [view chooseKit: 0];
 
     // pads
     [self click: [view rectForTab: kPagePads]];
@@ -721,13 +723,23 @@ static void loadKits (AppCore* c)
     [self click: [view rectForPad: 7 half: 0]];
     [self check: e.hitLogCount() == 2 && lg[1].pad == 7 && lg[1].choice == 0 what: "left half of HI-HAT plays closed"];
     e.setHitLog (0, 0);
-    [self click: [view rectForKit: 1]];
+    [view chooseKit: 1];
     [self check: NSMinX ([view rectForPad: 4 half: -1]) == kPanelFrame + 42.0 + 3 * 186.0
                  && NSMinX ([view rectForPad: 2 half: -1]) == kPanelFrame + 42.0 + 4 * 186.0
                  && NSMinX ([view rectForPad: 6 half: -1]) == kPanelFrame + 42.0 + 5 * 186.0
            what: "CR-78: BONGO, CONGA, CABASSA together, empty pads last"];
     [self shot: "pads_cr78"];
-    [self click: [view rectForKit: 0]];
+    [view chooseKit: 0];
+    // KIT drop-down arrows step through all five kits
+    [self click: [view rectForKit: -1]];
+    [self check: e.song().patterns[0].kit == tbdm::kKitTVOD what: "KIT left arrow from 707 wraps to TVOD"];
+    [self shot: "pads_tvod"];
+    [self click: [view rectForKit: -1]];
+    [self check: e.song().patterns[0].kit == tbdm::kKit8Bit what: "...then 8 BIT"];
+    [self shot: "pads_8bit"];
+    [self click: [view rectForKit: 1]];
+    [self click: [view rectForKit: 1]];
+    [self check: e.song().patterns[0].kit == tbdm::kKit707 what: "right arrow back round to 707"];
 
     // mixer
     [self click: [view rectForTab: kPageMixer]];

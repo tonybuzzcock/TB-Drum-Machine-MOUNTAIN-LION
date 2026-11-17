@@ -91,6 +91,15 @@ int main (int argc, char** argv)
                && std::strcmp (kitDef (kKitLM1).pads[3].file[0][0], "Mid Tom 1 LM1.wav") == 0
                && std::strcmp (kitDef (kKitLM1).pads[10].file[0][0], "Tom 2 LM1.wav") == 0, "LM-1: MID TOM 1 = new sample, MID TOM 2 = Tom 2");
         check (! kb.padAvailable (kKit707, 10) && ! kb.padAvailable (kKitCR78, 10), "707 and CR-78 have no 11th pad");
+        check (kb.samplesExpected (kKit8Bit) == 11 && kb.samplesExpected (kKitTVOD) == 7, "8 BIT 11 samples, TVOD 7");
+        check (kitDef (kKit8Bit).pads[0].numChoices == 2 && std::strcmp (kitDef (kKit8Bit).pads[4].label, "BLIP") == 0
+               && std::strcmp (kitDef (kKit8Bit).pads[10].label, "ALARMING") == 0 && kitDef (kKit8Bit).pads[5].numChoices == 0,
+               "8 BIT: KICK / ELECTRO, BLIP on Hi Tom, ALARMING on Mid Tom 2, Rim/Cow unused");
+        const KitDef& tv = kitDef (kKitTVOD);
+        const char* want[7] = { "KICK", "SNARE", "INTENDO", "NOISE 1", "NOISE 2", "NOISE LONG", "WHIPLASH" };
+        bool tvOk = true;
+        for (int i = 0; i < 7; ++i) tvOk = tvOk && tv.pads[tv.order[i]].numChoices == 1 && std::strcmp (tv.pads[tv.order[i]].label, want[i]) == 0;
+        check (tvOk, "TVOD: Kick, Snare, Intendo, Noise 1, Noise 2, Noise Long, Whiplash, each its own pad");
         check (kb.flamAvailable (kKit707, 1, 1) && ! kb.flamAvailable (kKit707, 1, 0), "707 flams on SD B only");
         check (! kb.padAvailable (kKitCR78, 3) && kb.padAvailable (kKitCR78, 2), "CR-78 unused pads are empty");
         int pad = -1, ch = -1;
@@ -668,9 +677,9 @@ int main (int argc, char** argv)
         KitBank rk;
         const int n = rk.load (real);
         char msg[128];
-        std::snprintf (msg, sizeof (msg), "loaded %d of 41 samples (707 %d, CR-78 %d, LM-1 %d)", n,
-                       rk.samplesLoaded (0), rk.samplesLoaded (1), rk.samplesLoaded (2));
-        check (n == 41, msg);
+        std::snprintf (msg, sizeof (msg), "loaded %d of 59 samples (707 %d, CR-78 %d, LM-1 %d, 8 BIT %d, TVOD %d)", n,
+                       rk.samplesLoaded (0), rk.samplesLoaded (1), rk.samplesLoaded (2), rk.samplesLoaded (3), rk.samplesLoaded (4));
+        check (n == 59, msg);
         if (! renders.empty())
         {
             for (int k = 0; k < kNumKits; ++k)
@@ -689,7 +698,8 @@ int main (int argc, char** argv)
                 setStep (P, 8, 0);
                 setStep (P, kAccentTrack, 0); setStep (P, kAccentTrack, 12);
                 ExportRange r = { false, 0, 4 };
-                const std::string path = renders + "/demo_" + std::string (k == 0 ? "707" : (k == 1 ? "CR78" : "LM1")) + ".wav";
+                const char* kn[kNumKits] = { "707", "CR78", "LM1", "8Bit", "TVOD" };
+                const std::string path = renders + "/demo_" + std::string (kn[k]) + ".wav";
                 long frames = 0;
                 check (exportWav (path.c_str(), s, rk, r, 44100, 3.0, &frames), ("render " + path).c_str());
             }

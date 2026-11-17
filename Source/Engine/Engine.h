@@ -25,11 +25,11 @@ const int kNumTracks = kNumPads + 1;    // pads + accent
 const int kMaxSteps = 32;
 const int kNumPatterns = 16;
 const int kMaxSong = 64;
-const int kNumKits = 3;
+const int kNumKits = 5;
 const int kNameLen = 48;                // pattern names: up to 40 characters, plus room
 const int kNumFlams = 3;                // normal, Flam A, Flam B
 
-enum { kKit707 = 0, kKitCR78 = 1, kKitLM1 = 2 };
+enum { kKit707 = 0, kKitCR78 = 1, kKitLM1 = 2, kKit8Bit = 3, kKitTVOD = 4 };
 
 // Time signatures, in 16th-note steps (tempo is always quarter-note BPM)
 enum { kSig44 = 0, kSig34, kSig64, kSig68, kSig128, kNumSigs };
@@ -61,6 +61,8 @@ struct KitDef
     const char* name;                   // "707", "CR-78", "LM-1"
     const char* folder;                 // folder name under Kits/
     PadDef pads[kNumPads];
+    int order[kNumPads];                // panel order of the pads for this kit; all zeros = the
+                                        // standard order (unused pads always go last either way)
 };
 
 const KitDef& kitDef (int kit);

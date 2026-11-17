@@ -12,9 +12,9 @@ modern Mac version lives in `TB-Drum-Machine-2026-MAC`.
 2. Unzip it twice, then drag **TB Drum Machine.app** into **Applications**.
 3. First launch: right-click the app → **Open** → **Open** (it isn't signed by Apple).
 4. **Kits ▸ Show Kits Folder** opens
-   `~/Library/Application Support/TB/TB Drum Machine/Kits`. Drag the three sample
-   folders in (**TB 707**, **TB CR78**, **TB LM1**, as supplied), then choose **Kits ▸ Reload Kits**.
-   The readout shows how many samples each kit loaded (707 23, CR-78 7, LM-1 11).
+   `~/Library/Application Support/TB/TB Drum Machine/Kits`. Drag the sample
+   folders in (**TB 707**, **TB CR78**, **TB LM1**, **TB 8 Bit**, **TB TVOD Kit**), then choose **Kits ▸ Reload Kits**.
+   The readout shows how many samples each kit loaded (707 23, CR-78 7, LM-1 11, 8 BIT 11, TVOD 7).
    A `Kits` folder next to the app works too.
 
 The samples aren't in this public repo; the app reads them from the Kits folder.
@@ -34,6 +34,17 @@ The samples aren't in this public repo; the app reads them from the Kits folder.
 | Hi-Hat | Closed / Open | Closed / Open | Closed / Open |
 | Crash | Crash | – | Crash |
 | Ride | Ride | – | Ride |
+
+Two more kits, from the user's own samples:
+
+- **8 BIT** (folder **TB 8 Bit**): Kick = KICK / ELECTRO, Snare = ELECTRO SNARE, Hi-Hat = COIN, then
+  BLIP, WONKY, ALARMING, SPACE HIT on the toms, WHIPLASH (Crash), NAG REPEAT (Ride) and
+  DISCHORDANT (Clap/Tamb).
+- **TVOD** (folder **TB TVOD Kit**): every sound on its own pad, in the order KICK, SNARE, INTENDO,
+  NOISE 1, NOISE 2, NOISE LONG, WHIPLASH.
+
+Pads a kit doesn't have always go last. Kits are chosen per pattern from the **KIT** drop-down (◀ ▶
+step through them; click the name for the menu).
 
 The two sounds on a pad share one voice, as on the 707, so the closed hat chokes the open hat.
 Pad names come from the loaded kit. A kit can be chosen for each pattern.
@@ -60,7 +71,7 @@ Pad names come from the loaded kit. A kit can be chosen for each pattern.
   and **PLAY FROM HERE** to start partway through.
 
 Top bar: PLAY/STOP (space bar), REC (R key), TEMPO 30–300 BPM, SWING (50–75%, delays the
-odd 16ths), ACCENT amount, MASTER, SYNC **INT / MIDI**, and KIT.
+odd 16ths), ACCENT amount, MASTER, SYNC **INT / MIDI**, and the KIT drop-down.
 
 The strip holds the 16 **pattern** keys: lime = the pattern playing, charcoal = has steps,
 blinking = next. Picking a pattern while playing waits for the end of the bar, like the 707.

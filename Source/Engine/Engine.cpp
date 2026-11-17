@@ -34,7 +34,7 @@ static const KitDef kKits[kNumKits] = {
         { "HI-HAT",      2, { "CLOSED", "OPEN" },    { { "CH 707.wav", 0, 0 }, { "OH 707.wav", 0, 0 } }, { 42, 46 } },
         { "CRASH",       1, { "", "" },              { { "Crash 707.wav", 0, 0 }, NOFILE }, { 49, 0 } },
         { "RIDE",        1, { "", "" },              { { "Ride 707.wav", 0, 0 }, NOFILE }, { 51, 0 } },
-        UNUSED } },
+        UNUSED }, { 0 } },
 
     { "CR-78", "TB CR78", {
         { "KICK",        1, { "", "" },              { { "Kick CR78.wav", 0, 0 }, NOFILE }, { 36, 0 } },
@@ -47,7 +47,7 @@ static const KitDef kKits[kNumKits] = {
         { "HI-HAT",      2, { "CLOSED", "OPEN" },    { { "Closed HiHat CR78.wav", 0, 0 }, { "Open HiHat CR78.wav", 0, 0 } }, { 42, 46 } },
         UNUSED,
         UNUSED,
-        UNUSED } },
+        UNUSED }, { 0 } },
 
     { "LM-1", "TB LM1", {
         { "KICK",        1, { "", "" },              { { "Kick LM1.wav", 0, 0 }, NOFILE }, { 36, 0 } },
@@ -60,7 +60,38 @@ static const KitDef kKits[kNumKits] = {
         { "HI-HAT",      2, { "CLOSED", "OPEN" },    { { "Closed HiHat LM1.wav", 0, 0 }, { "Open HiHat LM1.wav", 0, 0 } }, { 42, 46 } },
         { "CRASH",       1, { "", "" },              { { "Crash LM1.wav", 0, 0 }, NOFILE }, { 49, 0 } },
         { "RIDE",        1, { "", "" },              { { "Ride LM1.wav", 0, 0 }, NOFILE }, { 51, 0 } },
-        { "MID TOM 2",   1, { "", "" },              { { "Tom 2 LM1.wav", 0, 0 }, NOFILE }, { 47, 0 } } } }
+        { "MID TOM 2",   1, { "", "" },              { { "Tom 2 LM1.wav", 0, 0 }, NOFILE }, { 47, 0 } } }, { 0 } },
+
+    // 8 Bit: two kicks on the Kick pad, the effects on the toms (shortest to
+    // longest) and the long ones on Crash, Ride and Clap/Tamb
+    { "8 BIT", "TB 8 Bit", {
+        { "KICK",        2, { "KICK", "ELECTRO" },   { { "TB_8Bit_Kick.wav", 0, 0 }, { "TB_8Bit_Kick_Electro.wav", 0, 0 } }, { 36, 35 } },
+        { "ELECTRO SNARE", 1, { "", "" },            { { "TB_8Bit_Snare_Electro.wav", 0, 0 }, NOFILE }, { 38, 0 } },
+        { "SPACE HIT",   1, { "", "" },              { { "TB_8Bit_Space_Hit.wav", 0, 0 }, NOFILE }, { 45, 0 } },
+        { "WONKY",       1, { "", "" },              { { "TB_8Bit_Wonky.wav", 0, 0 }, NOFILE }, { 48, 0 } },
+        { "BLIP",        1, { "", "" },              { { "TB_8Bit_Blip.wav", 0, 0 }, NOFILE }, { 50, 0 } },
+        UNUSED,
+        { "DISCHORDANT", 1, { "", "" },              { { "TB_8Bit_Dischordant.wav", 0, 0 }, NOFILE }, { 39, 0 } },
+        { "COIN",        1, { "", "" },              { { "TB_8Bit_HiHat_Coin.wav", 0, 0 }, NOFILE }, { 42, 0 } },
+        { "WHIPLASH",    1, { "", "" },              { { "TB_8Bit_Whiplash.wav", 0, 0 }, NOFILE }, { 49, 0 } },
+        { "NAG REPEAT",  1, { "", "" },              { { "TB_8Bit_Nag_Repeat.wav", 0, 0 }, NOFILE }, { 51, 0 } },
+        { "ALARMING",    1, { "", "" },              { { "TB_8Bit_Alarming.wav", 0, 0 }, NOFILE }, { 47, 0 } } }, { 0 } },
+
+    // TVOD: every sound on its own pad, in the user's order: Kick, Snare,
+    // Intendo, Noise 1, Noise 2, Noise Long, Whiplash
+    { "TVOD", "TB TVOD Kit", {
+        { "KICK",        1, { "", "" },              { { "TB TVOD Kick.wav", 0, 0 }, NOFILE }, { 36, 0 } },
+        { "SNARE",       1, { "", "" },              { { "TB TVOD Snare.wav", 0, 0 }, NOFILE }, { 38, 0 } },
+        UNUSED,
+        UNUSED,
+        UNUSED,
+        { "INTENDO",     1, { "", "" },              { { "TB TVOD Snare Intendo.wav", 0, 0 }, NOFILE }, { 40, 0 } },
+        { "NOISE 2",     1, { "", "" },              { { "TB TVOD White Noise Medium 2.wav", 0, 0 }, NOFILE }, { 46, 0 } },
+        { "NOISE 1",     1, { "", "" },              { { "TB TVOD White Noise Medium 1.wav", 0, 0 }, NOFILE }, { 42, 0 } },
+        { "NOISE LONG",  1, { "", "" },              { { "TB TVOD White Noise Long 01.wav", 0, 0 }, NOFILE }, { 49, 0 } },
+        { "WHIPLASH",    1, { "", "" },              { { "TB TVOD Whiplash.wav", 0, 0 }, NOFILE }, { 51, 0 } },
+        UNUSED },
+      { 0, 1, 5, 7, 6, 8, 9, 4, 3, 10, 2 } }
 };
 
 #undef NOFILE
@@ -122,14 +153,31 @@ void KitBank::clear()
 static bool tryLoad (const char* dir, const char* folder, const char* file, Sample& out)
 {
     char path[2048];
-    const char* folders[2] = { folder, folder + (std::strncmp (folder, "TB ", 3) == 0 ? 3 : 0) };
+    // the folder as named, without "TB ", and with or without " Kit" on the end
+    char f[4][256];
+    const char* bare = folder + (std::strncmp (folder, "TB ", 3) == 0 ? 3 : 0);
+    const size_t fl = std::strlen (folder);
+    const bool hasKit = fl > 4 && std::strcmp (folder + fl - 4, " Kit") == 0;
+    std::snprintf (f[0], sizeof (f[0]), "%s", folder);
+    std::snprintf (f[1], sizeof (f[1]), "%s", bare);
+    if (hasKit)
+    {
+        std::snprintf (f[2], sizeof (f[2]), "%.*s", (int) (fl - 4), folder);
+        std::snprintf (f[3], sizeof (f[3]), "%.*s", (int) (std::strlen (bare) - 4), bare);
+    }
+    else
+    {
+        std::snprintf (f[2], sizeof (f[2]), "%s Kit", folder);
+        std::snprintf (f[3], sizeof (f[3]), "%s Kit", bare);
+    }
+    const char* folders[4] = { f[0], f[1], f[2], f[3] };
     // the file as named, or with underscores for spaces (as some uploads arrive)
     char alt[256];
     std::snprintf (alt, sizeof (alt), "%s", file);
     for (char* c = alt; *c; ++c) if (*c == ' ') *c = '_';
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 8; ++i)
     {
-        std::snprintf (path, sizeof (path), "%s/%s/%s", dir, folders[i & 1], i < 2 ? file : alt);
+        std::snprintf (path, sizeof (path), "%s/%s/%s", dir, folders[i & 3], i < 4 ? file : alt);
         float* d = 0;
         int n = 0;
         double r = 44100.0;

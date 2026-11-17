@@ -36,7 +36,8 @@ enum { kPagePads = 0, kPageSteps = 1, kPageMixer = 2, kPageSong = 3 };
 - (NSRect) rectForPad: (int) pad half: (int) half;
 - (NSRect) rectForTab: (int) i;
 - (NSRect) rectForPatternSlot: (int) i;
-- (NSRect) rectForKit: (int) i;
+- (NSRect) rectForKit: (int) i;    // -1 left arrow, +1 right arrow, 0 the menu
+- (void) chooseKit: (int) k;
 - (NSRect) rectForPlay;
 - (NSRect) rectForEditMode: (int) i;
 - (NSRect) readoutRect;
