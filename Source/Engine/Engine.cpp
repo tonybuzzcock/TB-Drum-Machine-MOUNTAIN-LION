@@ -78,7 +78,7 @@ static const KitDef kKits[kNumKits] = {
         { "ALARMING",    1, { "", "" },              { { "TB_8Bit_Alarming.wav", 0, 0 }, NOFILE }, { 47, 0 } } }, { 0 } },
 
     // TVOD: every sound on its own pad, in the user's order: Kick, Snare,
-    // Intendo, Noise 1, Noise 2, Noise Long, Whiplash
+    // Intendo, White Noise 1, 2 and 3 (medium 1, medium 2, long), Whiplash
     { "TVOD", "TB TVOD Kit", {
         { "KICK",        1, { "", "" },              { { "TB TVOD Kick.wav", 0, 0 }, NOFILE }, { 36, 0 } },
         { "SNARE",       1, { "", "" },              { { "TB TVOD Snare.wav", 0, 0 }, NOFILE }, { 38, 0 } },
@@ -86,9 +86,9 @@ static const KitDef kKits[kNumKits] = {
         UNUSED,
         UNUSED,
         { "INTENDO",     1, { "", "" },              { { "TB TVOD Snare Intendo.wav", 0, 0 }, NOFILE }, { 40, 0 } },
-        { "NOISE 2",     1, { "", "" },              { { "TB TVOD White Noise Medium 2.wav", 0, 0 }, NOFILE }, { 46, 0 } },
-        { "NOISE 1",     1, { "", "" },              { { "TB TVOD White Noise Medium 1.wav", 0, 0 }, NOFILE }, { 42, 0 } },
-        { "NOISE LONG",  1, { "", "" },              { { "TB TVOD White Noise Long 01.wav", 0, 0 }, NOFILE }, { 49, 0 } },
+        { "WHITE NOISE 2", 1, { "", "" },              { { "TB TVOD White Noise Medium 2.wav", 0, 0 }, NOFILE }, { 46, 0 } },
+        { "WHITE NOISE 1", 1, { "", "" },              { { "TB TVOD White Noise Medium 1.wav", 0, 0 }, NOFILE }, { 42, 0 } },
+        { "WHITE NOISE 3", 1, { "", "" },              { { "TB TVOD White Noise Long 01.wav", 0, 0 }, NOFILE }, { 49, 0 } },
         { "WHIPLASH",    1, { "", "" },              { { "TB TVOD Whiplash.wav", 0, 0 }, NOFILE }, { 51, 0 } },
         UNUSED },
       { 0, 1, 5, 7, 6, 8, 9, 4, 3, 10, 2 } }

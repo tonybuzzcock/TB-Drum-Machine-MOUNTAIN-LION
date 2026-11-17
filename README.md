@@ -41,7 +41,7 @@ Two more kits, from the user's own samples:
   BLIP, WONKY, ALARMING, SPACE HIT on the toms, WHIPLASH (Crash), NAG REPEAT (Ride) and
   DISCHORDANT (Clap/Tamb).
 - **TVOD** (folder **TB TVOD Kit**): every sound on its own pad, in the order KICK, SNARE, INTENDO,
-  NOISE 1, NOISE 2, NOISE LONG, WHIPLASH.
+  WHITE NOISE 1, WHITE NOISE 2, WHITE NOISE 3 (the long one), WHIPLASH.
 
 Pads a kit doesn't have always go last. Kits are chosen per pattern from the **KIT** drop-down (◀ ▶
 step through them; click the name for the menu).

@@ -96,10 +96,10 @@ int main (int argc, char** argv)
                && std::strcmp (kitDef (kKit8Bit).pads[10].label, "ALARMING") == 0 && kitDef (kKit8Bit).pads[5].numChoices == 0,
                "8 BIT: KICK / ELECTRO, BLIP on Hi Tom, ALARMING on Mid Tom 2, Rim/Cow unused");
         const KitDef& tv = kitDef (kKitTVOD);
-        const char* want[7] = { "KICK", "SNARE", "INTENDO", "NOISE 1", "NOISE 2", "NOISE LONG", "WHIPLASH" };
+        const char* want[7] = { "KICK", "SNARE", "INTENDO", "WHITE NOISE 1", "WHITE NOISE 2", "WHITE NOISE 3", "WHIPLASH" };
         bool tvOk = true;
         for (int i = 0; i < 7; ++i) tvOk = tvOk && tv.pads[tv.order[i]].numChoices == 1 && std::strcmp (tv.pads[tv.order[i]].label, want[i]) == 0;
-        check (tvOk, "TVOD: Kick, Snare, Intendo, Noise 1, Noise 2, Noise Long, Whiplash, each its own pad");
+        check (tvOk, "TVOD: Kick, Snare, Intendo, White Noise 1, 2, 3, Whiplash, each its own pad");
         check (kb.flamAvailable (kKit707, 1, 1) && ! kb.flamAvailable (kKit707, 1, 0), "707 flams on SD B only");
         check (! kb.padAvailable (kKitCR78, 3) && kb.padAvailable (kKitCR78, 2), "CR-78 unused pads are empty");
         int pad = -1, ch = -1;
