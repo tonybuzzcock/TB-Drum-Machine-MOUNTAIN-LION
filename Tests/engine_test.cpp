@@ -108,6 +108,38 @@ int main (int argc, char** argv)
         check (noteToPad (kKitCR78, 45, pad, ch) && pad == 2, "generic low tom note reaches the conga");
     }
 
+    std::printf ("Kit folders and file names\n");
+    {
+        // the 8 Bit files as named on the Mac (spaces), folder without the space,
+        // a capitalised extension, and a stray .DS_Store
+        std::system ("rm -rf /tmp/tbdm_kits && mkdir -p '/tmp/tbdm_kits/TB 8Bit' '/tmp/tbdm_kits/tb-tvod' && touch '/tmp/tbdm_kits/TB 8Bit/.DS_Store'");
+        float one[64];
+        for (int i = 0; i < 64; ++i) one[i] = 0.1f;
+        int made = 0;
+        for (int p = 0; p < kNumPads; ++p)
+            for (int c = 0; c < 2; ++c)
+            {
+                const char* f8 = kitDef (kKit8Bit).pads[p].file[c][0];
+                if (f8)
+                {
+                    std::string nm (f8);
+                    for (size_t i = 0; i < nm.size(); ++i) if (nm[i] == '_') nm[i] = ' ';
+                    if (made == 0) nm.replace (nm.size() - 3, 3, "WAV");
+                    writeWav24 (("/tmp/tbdm_kits/TB 8Bit/" + nm).c_str(), one, 0, 64, 44100);
+                    ++made;
+                }
+                const char* ft = kitDef (kKitTVOD).pads[p].file[c][0];
+                if (ft) writeWav24 ((std::string ("/tmp/tbdm_kits/tb-tvod/") + ft).c_str(), one, 0, 64, 44100);
+            }
+        KitBank fk;
+        fk.load ("/tmp/tbdm_kits");
+        char msg[128];
+        std::snprintf (msg, sizeof (msg), "'TB 8Bit' with spaced names loads 8 BIT (%d/11); 'tb-tvod' loads TVOD (%d/7)",
+                       fk.samplesLoaded (kKit8Bit), fk.samplesLoaded (kKitTVOD));
+        check (fk.samplesLoaded (kKit8Bit) == 11 && fk.samplesLoaded (kKitTVOD) == 7, msg);
+        std::system ("rm -rf /tmp/tbdm_kits");
+    }
+
     std::printf ("Timing\n");
     {
         Engine e (&kb);

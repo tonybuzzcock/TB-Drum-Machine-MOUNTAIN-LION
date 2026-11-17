@@ -6,6 +6,10 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <vector>
+#include <dirent.h>
+#include <sys/stat.h>
 
 namespace tbdm
 {
@@ -150,46 +154,42 @@ void KitBank::clear()
     }
 }
 
-static bool tryLoad (const char* dir, const char* folder, const char* file, Sample& out)
+// Kit folders and sample files are matched forgivingly, so names typed on the
+// Mac and names as they came through an upload both work: letters and digits
+// only, any case, ignoring spaces, underscores and hyphens, a leading "TB" and
+// (for folders) a trailing "Kit". "TB 8Bit", "TB 8 Bit" and "8_bit kit" are one
+// folder; "TB 8Bit Kick.wav" and "TB_8Bit_Kick.WAV" are one file.
+static std::string nameKey (const char* name, bool isFolder)
 {
-    char path[2048];
-    // the folder as named, without "TB ", and with or without " Kit" on the end
-    char f[4][256];
-    const char* bare = folder + (std::strncmp (folder, "TB ", 3) == 0 ? 3 : 0);
-    const size_t fl = std::strlen (folder);
-    const bool hasKit = fl > 4 && std::strcmp (folder + fl - 4, " Kit") == 0;
-    std::snprintf (f[0], sizeof (f[0]), "%s", folder);
-    std::snprintf (f[1], sizeof (f[1]), "%s", bare);
-    if (hasKit)
+    std::string k;
+    for (const char* c = name; *c; ++c)
     {
-        std::snprintf (f[2], sizeof (f[2]), "%.*s", (int) (fl - 4), folder);
-        std::snprintf (f[3], sizeof (f[3]), "%.*s", (int) (std::strlen (bare) - 4), bare);
+        const unsigned char u = (unsigned char) *c;
+        if (u >= 'A' && u <= 'Z') k += (char) (u - 'A' + 'a');
+        else if ((u >= 'a' && u <= 'z') || (u >= '0' && u <= '9')) k += (char) u;
     }
-    else
+    if (k.size() > 2 && k.compare (0, 2, "tb") == 0) k.erase (0, 2);
+    if (isFolder && k.size() > 3 && k.compare (k.size() - 3, 3, "kit") == 0) k.erase (k.size() - 3);
+    return k;
+}
+
+static bool isDirectory (const std::string& path)
+{
+    struct stat st;
+    return stat (path.c_str(), &st) == 0 && S_ISDIR (st.st_mode);
+}
+
+static void listDir (const std::string& path, std::vector<std::string>& out)
+{
+    out.clear();
+    DIR* d = opendir (path.c_str());
+    if (! d) return;
+    while (struct dirent* e = readdir (d))
     {
-        std::snprintf (f[2], sizeof (f[2]), "%s Kit", folder);
-        std::snprintf (f[3], sizeof (f[3]), "%s Kit", bare);
+        if (e->d_name[0] == '.') continue;      // ., .., .DS_Store, ._ files
+        out.push_back (e->d_name);
     }
-    const char* folders[4] = { f[0], f[1], f[2], f[3] };
-    // the file as named, or with underscores for spaces (as some uploads arrive)
-    char alt[256];
-    std::snprintf (alt, sizeof (alt), "%s", file);
-    for (char* c = alt; *c; ++c) if (*c == ' ') *c = '_';
-    for (int i = 0; i < 8; ++i)
-    {
-        std::snprintf (path, sizeof (path), "%s/%s/%s", dir, folders[i & 3], i < 4 ? file : alt);
-        float* d = 0;
-        int n = 0;
-        double r = 44100.0;
-        if (readWav (path, d, n, r))
-        {
-            out.data = d;
-            out.frames = n;
-            out.rate = r;
-            return true;
-        }
-    }
-    return false;
+    closedir (d);
 }
 
 int KitBank::load (const char* dir)
@@ -197,18 +197,44 @@ int KitBank::load (const char* dir)
     clear();
     int total = 0;
     if (! dir) return 0;
+    std::vector<std::string> entries, files;
+    listDir (dir, entries);
     for (int k = 0; k < kNumKits; ++k)
+    {
+        // the kit's folder
+        const std::string want = nameKey (kKits[k].folder, true);
+        std::string kitDir;
+        for (size_t i = 0; i < entries.size() && kitDir.empty(); ++i)
+            if (nameKey (entries[i].c_str(), true) == want && isDirectory (std::string (dir) + "/" + entries[i]))
+                kitDir = std::string (dir) + "/" + entries[i];
+        if (kitDir.empty()) continue;
+        listDir (kitDir, files);
         for (int p = 0; p < kNumPads; ++p)
             for (int c = 0; c < 2; ++c)
                 for (int f = 0; f < kNumFlams; ++f)
                 {
                     const char* file = kKits[k].pads[p].file[c][f];
-                    if (file && tryLoad (dir, kKits[k].folder, file, s[k][p][c][f]))
+                    if (! file) continue;
+                    const std::string fk = nameKey (file, false);
+                    for (size_t i = 0; i < files.size(); ++i)
                     {
-                        ++loaded[k];
-                        ++total;
+                        if (nameKey (files[i].c_str(), false) != fk) continue;
+                        float* d = 0;
+                        int n = 0;
+                        double r = 44100.0;
+                        if (readWav ((kitDir + "/" + files[i]).c_str(), d, n, r))
+                        {
+                            Sample& x = s[k][p][c][f];
+                            x.data = d;
+                            x.frames = n;
+                            x.rate = r;
+                            ++loaded[k];
+                            ++total;
+                            break;
+                        }
                     }
                 }
+    }
     return total;
 }
 
