@@ -1485,7 +1485,14 @@ const char* kModeNames[4] = { "STEP", "A / B", "FLAM", "HITS" };
         const char* nm = tr == kAccentTrack ? "ACCENT" : (kd.pads[tr].numChoices ? kd.pads[tr].label : "---");
         drawText (nm, boldFont (fitSize (nm, 12.5, 116.0)), used ? ink : rgb (130, 132, 136), 20.0, y + 18.0, 0.0);
         if (tr != kAccentTrack && kd.pads[tr].numChoices == 2)
-            drawSlide2 (rowChoiceRect (row), kd.pads[tr].choiceLabel[0], kd.pads[tr].choiceLabel[1], rowChoice[tr] == 1, kAmber, used);
+        {
+            // the switch shows what the row plays (its own setting if the row is empty or mixed)
+            int na = 0, nb = 0;
+            for (int k = 0; k < T.length && k < kMaxSteps; ++k)
+                if (T.steps[k].on) { if (T.steps[k].choice) ++nb; else ++na; }
+            const bool showB = (na == 0 && nb > 0) ? true : ((nb == 0 && na > 0) ? false : rowChoice[tr] == 1);
+            drawSlide2 (rowChoiceRect (row), kd.pads[tr].choiceLabel[0], kd.pads[tr].choiceLabel[1], showB, kAmber, used);
+        }
         char lt[8];
         std::snprintf (lt, sizeof (lt), "%d", T.length);
         drawStepper (rowLenRect (row), lt);
@@ -2584,15 +2591,20 @@ static std::string cleanName (const char* s)
             const int tr = rowTrack (row);
             if (tr != kAccentTrack && inRect (p, rowChoiceRect (row)) && kitDef (e.song().patterns[e.currentPattern()].kit).pads[tr].numChoices == 2)
             {
+                // the switch sets the whole row: every step in it plays the chosen
+                // sound, and new steps get it too (the A / B click mode still mixes them)
                 rowChoice[tr] = p.x >= NSMidX (rowChoiceRect (row)) ? 1 : 0;
                 const tbdm::PadDef& d = kitDef (e.song().patterns[e.currentPattern()].kit).pads[tr];
-                char t[96];
-                std::snprintf (t, sizeof (t), "%s   NEW STEPS PLAY %s", d.label, d.choiceLabel[rowChoice[tr]]);
-                [self setReadout: t];
                 e.lock();
+                tbdm::Track& T = e.song().patterns[e.currentPattern()].tracks[tr];
+                for (int k = 0; k < kMaxSteps; ++k)
+                    if (T.steps[k].on) T.steps[k].choice = (unsigned char) rowChoice[tr];
                 e.hitPad (tr, rowChoice[tr], 0, false);
                 e.unlock();
-                [self setNeedsDisplay: YES];
+                char t[96];
+                std::snprintf (t, sizeof (t), "%s   ROW PLAYS %s", d.label, d.choiceLabel[rowChoice[tr]]);
+                [self setReadout: t];
+                [self touched];
                 return;
             }
             if (stepperSide (rowLenRect (row), p))
@@ -2738,6 +2750,7 @@ static std::string cleanName (const char* s)
 // Test hooks
 
 - (NSRect) rectForStep: (int) k row: (int) row { [self syncOrder]; return faceToView (cellRect (row, k)); }
+- (NSRect) rectForRowSwitch: (int) row { [self syncOrder]; return faceToView (rowChoiceRect (row)); }
 - (NSRect) rectForPad: (int) pad half: (int) half
 {
     [self syncOrder];

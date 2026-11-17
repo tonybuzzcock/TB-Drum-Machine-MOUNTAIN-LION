@@ -33,6 +33,7 @@ enum { kPagePads = 0, kPageSteps = 1, kPageMixer = 2, kPageSong = 3 };
 - (void) refreshAll;
 // test hooks
 - (NSRect) rectForStep: (int) k row: (int) row;
+- (NSRect) rectForRowSwitch: (int) row;
 - (NSRect) rectForPad: (int) pad half: (int) half;
 - (NSRect) rectForTab: (int) i;
 - (NSRect) rectForPatternSlot: (int) i;

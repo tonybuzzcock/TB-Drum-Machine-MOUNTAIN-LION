@@ -680,6 +680,18 @@ static void loadKits (AppCore* c)
     [self check: e.song().patterns[0].tracks[0].steps[0].choice == 1 what: "A/B mode: kick step 1 becomes BD B"];
     [self click: [view rectForEditMode: 0]];
     [self shot: "steps_edited"];
+    // the A / B switch on a row sets every step in it
+    {
+        const NSRect sw = [view rectForRowSwitch: [view rowForPad: 0]];
+        [self clickAt: NSMakePoint (NSMinX (sw) + sw.size.width * 0.75, NSMidY (sw)) flags: 0];
+        bool allB = true;
+        for (int k = 0; k < 16; ++k) if (e.song().patterns[0].tracks[0].steps[k].on) allB = allB && e.song().patterns[0].tracks[0].steps[k].choice == 1;
+        [self check: allB what: "KICK row switch to B: every kick step plays BD B"];
+        [self clickAt: NSMakePoint (NSMinX (sw) + sw.size.width * 0.25, NSMidY (sw)) flags: 0];
+        bool allA = true;
+        for (int k = 0; k < 16; ++k) if (e.song().patterns[0].tracks[0].steps[k].on) allA = allA && e.song().patterns[0].tracks[0].steps[k].choice == 0;
+        [self check: allA what: "...and back to A: every kick step plays BD A"];
+    }
 
     // time signatures
     [view setTimeSignature: tbdm::kSig68];
